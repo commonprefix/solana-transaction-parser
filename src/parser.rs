@@ -11,12 +11,12 @@ use crate::parser_native_gas_added::ParserNativeGasAdded;
 use crate::parser_native_gas_paid::ParserNativeGasPaid;
 use crate::parser_native_gas_refunded::ParserNativeGasRefunded;
 use crate::parser_signers_rotated::ParserSignersRotated;
+use crate::types::SolanaTransaction;
 use crate::{
     error::TransactionParsingError, parser_execute_insufficient_gas::ParserExecuteInsufficientGas,
 };
 use async_trait::async_trait;
 use relayer_core::gmp_api::gmp_types::Event;
-use solana::types::SolanaTransaction;
 use solana_sdk::pubkey::Pubkey;
 use solana_transaction_status::UiInstruction;
 use std::collections::HashMap;
@@ -417,7 +417,7 @@ mod tests {
     use std::str::FromStr;
 
     use super::*;
-    use solana::test_utils::fixtures::transaction_fixtures;
+    use crate::test_utils::fixtures::transaction_fixtures;
 
     #[tokio::test]
     async fn test_parser_converted_and_message_id_set() {

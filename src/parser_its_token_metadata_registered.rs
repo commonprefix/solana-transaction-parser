@@ -131,7 +131,7 @@ mod tests {
 
     use super::*;
     use crate::parser_its_token_metadata_registered::ParserTokenMetadataRegistered;
-    use solana::test_utils::fixtures::transaction_fixtures;
+    use crate::test_utils::fixtures::transaction_fixtures;
     #[tokio::test]
     async fn test_parser() {
         let txs = transaction_fixtures();

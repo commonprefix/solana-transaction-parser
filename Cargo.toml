@@ -7,7 +7,7 @@ edition = "2021"
 axelar-solana-gateway = { git = "https://github.com/axelarnetwork/axelar-amplifier-solana", branch = "gateway-event-cpi", package = "axelar-solana-gateway", features = ["no-entrypoint"] }
 event-cpi = { git = "https://github.com/axelarnetwork/axelar-amplifier-solana", branch = "gateway-event-cpi", package = "event-cpi" }
 relayer-core = { git = "https://github.com/commonprefix/axelar-relayer-core", branch = "temp-solana", features = ["mocks"] }
-solana = { git = "https://github.com/axelarnetwork/axelar-relayer-solana", branch = "feat/its", features = ["test-utils"] }
+#solana = { git = "https://github.com/axelarnetwork/axelar-relayer-solana", branch = "feat/its", features = ["test-utils"] }
 anchor-lang = "0.31.1"
 hex = "0.4.3"
 bs58 = "0.5"
@@ -25,6 +25,7 @@ solana-transaction-status = "~2.1"
 borsh = { version = "1", features = ["derive"] }
 chrono = { version = "0.4.40", features = ["serde"] }
 tokio = { version = "1.41.1", features = ["full", "test-util"] }
+solana-transaction-status-client-types = "~2.1"
 
 [dev-dependencies]
 mockall = "0.13.1"

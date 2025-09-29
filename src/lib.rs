@@ -16,3 +16,7 @@ pub mod parser_native_gas_added;
 pub mod parser_native_gas_paid;
 pub mod parser_native_gas_refunded;
 pub mod parser_signers_rotated;
+pub mod types;
+
+#[cfg(test)]
+pub mod test_utils;

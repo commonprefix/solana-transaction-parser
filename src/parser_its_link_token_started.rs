@@ -152,7 +152,7 @@ mod tests {
 
     use super::*;
     use crate::parser_its_link_token_started::ParserLinkTokenStarted;
-    use solana::test_utils::fixtures::transaction_fixtures;
+    use crate::test_utils::fixtures::transaction_fixtures;
     #[tokio::test]
     async fn test_parser() {
         let txs = transaction_fixtures();

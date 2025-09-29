@@ -153,7 +153,7 @@ mod tests {
 
     use super::*;
     use crate::parser_its_interchain_token_deployment_started::ParserInterchainTokenDeploymentStarted;
-    use solana::test_utils::fixtures::transaction_fixtures;
+    use crate::test_utils::fixtures::transaction_fixtures;
     #[tokio::test]
     async fn test_parser() {
         let txs = transaction_fixtures();
