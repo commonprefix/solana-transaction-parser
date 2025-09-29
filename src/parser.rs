@@ -54,7 +54,7 @@ pub struct TransactionParser {
 pub trait TransactionParserTrait: Send + Sync {
     async fn parse_transaction(
         &self,
-        transaction: SolanaTransaction,
+        transaction: String,
     ) -> Result<Vec<Event>, TransactionParsingError>;
 }
 
@@ -62,7 +62,7 @@ pub trait TransactionParserTrait: Send + Sync {
 impl TransactionParserTrait for TransactionParser {
     async fn parse_transaction(
         &self,
-        transaction: SolanaTransaction,
+        transaction: String,
     ) -> Result<Vec<Event>, TransactionParsingError> {
         let mut events: Vec<Event> = Vec::new();
         let mut parsers: Vec<Box<dyn Parser + Send + Sync>> = Vec::new();
@@ -71,7 +71,10 @@ impl TransactionParserTrait for TransactionParser {
         let mut gas_credit_map: HashMap<MessageMatchingKey, Box<dyn Parser + Send + Sync>> =
             HashMap::new();
 
+        let transaction = serde_json::from_str::<SolanaTransaction>(&transaction)
+            .map_err(|e| TransactionParsingError::InvalidTransaction(e.to_string()))?;
         let transaction_id = transaction.signature;
+
         let (message_approved_count, message_executed_count) = self
             .create_parsers(
                 transaction.clone(),
@@ -425,7 +428,10 @@ mod tests {
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
         );
-        let events = parser.parse_transaction(txs[0].clone()).await.unwrap();
+        let events = parser
+            .parse_transaction(serde_json::to_string(&txs[0]).unwrap())
+            .await
+            .unwrap();
         assert_eq!(events.len(), 2);
 
         let sig = txs[0].signature.clone().to_string();
@@ -464,7 +470,10 @@ mod tests {
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
         );
-        let events = parser.parse_transaction(txs[3].clone()).await.unwrap();
+        let events = parser
+            .parse_transaction(serde_json::to_string(&txs[3]).unwrap())
+            .await
+            .unwrap();
 
         assert_eq!(events.len(), 1);
 
@@ -486,7 +495,10 @@ mod tests {
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
         );
-        let events = parser.parse_transaction(txs[6].clone()).await.unwrap();
+        let events = parser
+            .parse_transaction(serde_json::to_string(&txs[6]).unwrap())
+            .await
+            .unwrap();
 
         assert_eq!(events.len(), 2);
 
@@ -515,7 +527,10 @@ mod tests {
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
         );
-        let events = parser.parse_transaction(txs[1].clone()).await.unwrap();
+        let events = parser
+            .parse_transaction(serde_json::to_string(&txs[1]).unwrap())
+            .await
+            .unwrap();
         assert_eq!(events.len(), 1);
 
         match events[0].clone() {
@@ -536,7 +551,10 @@ mod tests {
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
         );
-        let events = parser.parse_transaction(txs[5].clone()).await.unwrap();
+        let events = parser
+            .parse_transaction(serde_json::to_string(&txs[5]).unwrap())
+            .await
+            .unwrap();
         assert_eq!(events.len(), 2);
 
         match events[0].clone() {
@@ -565,7 +583,10 @@ mod tests {
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
         );
-        let events = parser.parse_transaction(txs[2].clone()).await.unwrap();
+        let events = parser
+            .parse_transaction(serde_json::to_string(&txs[2]).unwrap())
+            .await
+            .unwrap();
         assert_eq!(events.len(), 1);
 
         match events[0].clone() {
@@ -586,7 +607,10 @@ mod tests {
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
         );
-        let events = parser.parse_transaction(txs[4].clone()).await.unwrap();
+        let events = parser
+            .parse_transaction(serde_json::to_string(&txs[4]).unwrap())
+            .await
+            .unwrap();
         assert_eq!(events.len(), 1);
 
         match events[0].clone() {
@@ -604,7 +628,10 @@ mod tests {
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
         );
-        let events = parser.parse_transaction(txs[7].clone()).await.unwrap();
+        let events = parser
+            .parse_transaction(serde_json::to_string(&txs[7]).unwrap())
+            .await
+            .unwrap();
         assert_eq!(events.len(), 2);
 
         match events[0].clone() {
@@ -627,7 +654,10 @@ mod tests {
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
         );
-        let events = parser.parse_transaction(txs[8].clone()).await.unwrap();
+        let events = parser
+            .parse_transaction(serde_json::to_string(&txs[8]).unwrap())
+            .await
+            .unwrap();
         assert_eq!(events.len(), 2);
 
         match events[0].clone() {
@@ -650,7 +680,10 @@ mod tests {
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
         );
-        let events = parser.parse_transaction(txs[9].clone()).await.unwrap();
+        let events = parser
+            .parse_transaction(serde_json::to_string(&txs[9]).unwrap())
+            .await
+            .unwrap();
         assert_eq!(events.len(), 2);
 
         match events[0].clone() {
@@ -673,7 +706,10 @@ mod tests {
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
         );
-        let events = parser.parse_transaction(txs[10].clone()).await.unwrap();
+        let events = parser
+            .parse_transaction(serde_json::to_string(&txs[10]).unwrap())
+            .await
+            .unwrap();
         assert_eq!(events.len(), 2);
 
         match events[0].clone() {

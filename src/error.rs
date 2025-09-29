@@ -16,4 +16,6 @@ pub enum TransactionParsingError {
     InvalidInstructionData(String),
     #[error("IndexOverflow: {0}")]
     IndexOverflow(String),
+    #[error("InvalidTransaction: {0}")]
+    InvalidTransaction(String),
 }
