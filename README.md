@@ -1,0 +1,1 @@
+A crate that constructs Parsers suitable to parsing Solana transactions which include emit_cpi! style events in their inner instructions. The parsers extract those events and then create the corresponding GMP events.
