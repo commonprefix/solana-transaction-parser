@@ -1,4 +1,9 @@
 use super::message_matching_key::MessageMatchingKey;
+use crate::discriminators::{
+    CANNOT_EXECUTE_MESSAGE_EVENT_DISC, CPI_EVENT_DISC,
+    ITS_INTERCHAIN_TOKEN_DEPLOYMENT_STARTED_EVENT_DISC, ITS_INTERCHAIN_TRANSFER_EVENT_DISC,
+    ITS_LINK_TOKEN_STARTED_EVENT_DISC, ITS_TOKEN_METADATA_REGISTERED_EVENT_DISC,
+};
 use crate::instruction_index::InstructionIndex;
 use crate::parser_call_contract::ParserCallContract;
 use crate::parser_its_interchain_token_deployment_started::ParserInterchainTokenDeploymentStarted;
@@ -16,18 +21,18 @@ use crate::{
     error::TransactionParsingError, parser_execute_insufficient_gas::ParserExecuteInsufficientGas,
 };
 use async_trait::async_trait;
+use axelar_solana_gas_service::events::{
+    NativeGasAddedEvent, NativeGasPaidForContractCallEvent, NativeGasRefundedEvent,
+};
+use axelar_solana_gateway::events::{
+    CallContractEvent, MessageApprovedEvent, MessageExecutedEvent, VerifierSetRotatedEvent,
+};
+use event_cpi::Discriminator;
 use relayer_core::gmp_api::gmp_types::Event;
 use solana_sdk::pubkey::Pubkey;
 use solana_transaction_status::UiInstruction;
 use std::collections::HashMap;
 use tracing::{info, warn};
-
-#[derive(Clone, Copy, Debug)]
-pub struct ParserConfig {
-    pub event_cpi_discriminator: [u8; 8],
-    pub event_type_discriminator: [u8; 8],
-    pub expected_contract_address: Pubkey,
-}
 
 #[async_trait]
 pub trait Parser {
@@ -73,7 +78,6 @@ impl TransactionParserTrait for TransactionParser {
 
         let transaction = serde_json::from_str::<SolanaTransaction>(&transaction)
             .map_err(|e| TransactionParsingError::InvalidTransaction(e.to_string()))?;
-        let transaction_id = transaction.signature;
 
         let (message_approved_count, message_executed_count) = self
             .create_parsers(
@@ -87,8 +91,8 @@ impl TransactionParserTrait for TransactionParser {
             .await?;
 
         info!(
-            "Parsing results: transaction_id={} parsers={}, call_contract={}, gas_credit_map={}",
-            transaction_id,
+            "Parsing results: transaction signature={} parsers={}, call_contract={}, gas_credit_map={}",
+            transaction.signature,
             parsers.len(),
             call_contract.len(),
             gas_credit_map.len()
@@ -96,8 +100,8 @@ impl TransactionParserTrait for TransactionParser {
 
         if (parsers.len() + its_parsers.len() + call_contract.len() + gas_credit_map.len()) == 0 {
             warn!(
-                "Transaction did not produce any parsers: transaction_id={}",
-                transaction_id
+                "Transaction did not produce any parsers: transaction signature={}",
+                transaction.signature
             );
         }
 
@@ -175,6 +179,26 @@ impl TransactionParser {
         for group in transaction.ixs.iter() {
             for (inner_index, inst) in group.instructions.iter().enumerate() {
                 if let UiInstruction::Compiled(ci) = inst {
+                    let bytes = bs58::decode(&ci.data).into_vec().map_err(|e| {
+                        warn!("invalid instruction data: {:?}", e);
+                        TransactionParsingError::InvalidAccountAddress(e.to_string())
+                    })?;
+                    if bytes.len() < 16 {
+                        warn!(
+                            "instruction data is too short, transaction signature={}",
+                            transaction.signature
+                        );
+                        continue;
+                    }
+
+                    if bytes.get(0..8) != Some(&CPI_EVENT_DISC) {
+                        warn!(
+                            "expected event cpi discriminator, transaction signature={}",
+                            transaction.signature
+                        );
+                        continue;
+                    }
+
                     let index = InstructionIndex::new(
                         group
                             .index
@@ -188,193 +212,234 @@ impl TransactionParser {
                                 "Inner index overflow".to_string(),
                             ))? as u64,
                     );
-                    let mut parser = ParserNativeGasPaid::new(
-                        transaction.signature.to_string(),
-                        ci.clone(),
-                        self.gas_service_address,
-                        transaction.account_keys.clone(),
-                    )
-                    .await?;
-                    if parser.is_match().await? {
-                        info!(
-                            "ParserNativeGasPaid matched, transaction_id={}",
-                            transaction.signature
-                        );
-                        parser.parse().await?;
-                        let key = parser.key().await?;
-                        gas_credit_map.insert(key, Box::new(parser));
-                    }
 
-                    let mut parser = ParserNativeGasAdded::new(
-                        transaction.signature.to_string(),
-                        ci.clone(),
-                        self.gas_service_address,
-                        transaction.account_keys.clone(),
-                    )
-                    .await?;
-                    if parser.is_match().await? {
-                        info!(
-                            "ParserNativeGasAdded matched, transaction_id={}",
-                            transaction.signature
-                        );
-                        parser.parse().await?;
-                        parsers.push(Box::new(parser));
-                    }
-                    let mut parser = ParserNativeGasRefunded::new(
-                        transaction.signature.to_string(),
-                        ci.clone(),
-                        self.gas_service_address,
-                        transaction.cost_units,
-                        transaction.account_keys.clone(),
-                    )
-                    .await?;
-                    if parser.is_match().await? {
-                        info!(
-                            "ParserNativeGasRefunded matched, transaction_id={}",
-                            transaction.signature
-                        );
-                        parser.parse().await?;
-                        parsers.push(Box::new(parser));
-                    }
-                    let mut parser = ParserCallContract::new(
-                        transaction.signature.to_string(),
-                        ci.clone(),
-                        transaction.account_keys.clone(),
-                        chain_name.clone(),
-                        index,
-                        self.gateway_address,
-                    )
-                    .await?;
-                    if parser.is_match().await? {
-                        info!(
-                            "ParserCallContract matched, transaction_id={}",
-                            transaction.signature
-                        );
-                        parser.parse().await?;
-                        call_contract.push(Box::new(parser));
-                    }
-                    let mut parser = ParserMessageApproved::new(
-                        transaction.signature.to_string(),
-                        ci.clone(),
-                        self.gateway_address,
-                        transaction.account_keys.clone(),
-                    )
-                    .await?;
-                    if parser.is_match().await? {
-                        info!(
-                            "ParserMessageApproved matched, transaction_id={}",
-                            transaction.signature
-                        );
-                        parser.parse().await?;
-                        parsers.push(Box::new(parser));
-                        message_approved_count += 1;
-                    }
-                    let mut parser = ParserMessageExecuted::new(
-                        transaction.signature.to_string(),
-                        ci.clone(),
-                        self.gateway_address,
-                        transaction.account_keys.clone(),
-                    )
-                    .await?;
-                    if parser.is_match().await? {
-                        info!(
-                            "ParserMessageExecuted matched, transaction_id={}",
-                            transaction.signature
-                        );
-                        parser.parse().await?;
-                        parsers.push(Box::new(parser));
-                        message_executed_count += 1;
-                    }
-                    let mut parser = ParserExecuteInsufficientGas::new(
-                        transaction.signature.to_string(),
-                        ci.clone(),
-                        self.gateway_address,
-                        transaction.account_keys.clone(),
-                    )
-                    .await?;
-                    if parser.is_match().await? {
-                        info!(
-                            "ParserExecuteInsufficientGas matched, transaction_id={}",
-                            transaction.signature
-                        );
-                        parser.parse().await?;
-                        parsers.push(Box::new(parser));
-                    }
-                    let mut parser = ParserSignersRotated::new(
-                        transaction.signature.to_string(),
-                        ci.clone(),
-                        index,
-                        self.gateway_address,
-                        transaction.account_keys.clone(),
-                    )
-                    .await?;
-                    if parser.is_match().await? {
-                        info!(
-                            "ParserSignersRotated matched, transaction_id={}",
-                            transaction.signature
-                        );
-                        parser.parse().await?;
-                        parsers.push(Box::new(parser));
-                    }
-                    let mut parser = ParserInterchainTransfer::new(
-                        transaction.signature.to_string(),
-                        ci.clone(),
-                        self.its_address,
-                        transaction.account_keys.clone(),
-                    )
-                    .await?;
-                    if parser.is_match().await? {
-                        info!(
-                            "ParserInterchainTransfer matched, transaction_id={}",
-                            transaction.signature
-                        );
-                        parser.parse().await?;
-                        its_parsers.push(Box::new(parser));
-                    }
-                    let mut parser = ParserInterchainTokenDeploymentStarted::new(
-                        transaction.signature.to_string(),
-                        ci.clone(),
-                        self.its_address,
-                        transaction.account_keys.clone(),
-                    )
-                    .await?;
-                    if parser.is_match().await? {
-                        info!(
-                            "ParserInterchainTokenDeploymentStarted matched, transaction_id={}",
-                            transaction.signature
-                        );
-                        parser.parse().await?;
-                        its_parsers.push(Box::new(parser));
-                    }
-                    let mut parser = ParserLinkTokenStarted::new(
-                        transaction.signature.to_string(),
-                        ci.clone(),
-                        self.its_address,
-                        transaction.account_keys.clone(),
-                    )
-                    .await?;
-                    if parser.is_match().await? {
-                        info!(
-                            "ParserLinkTokenStarted matched, transaction_id={}",
-                            transaction.signature
-                        );
-                        parser.parse().await?;
-                        its_parsers.push(Box::new(parser));
-                    }
-                    let mut parser = ParserTokenMetadataRegistered::new(
-                        transaction.signature.to_string(),
-                        ci.clone(),
-                        self.its_address,
-                        transaction.account_keys.clone(),
-                    )
-                    .await?;
-                    if parser.is_match().await? {
-                        info!(
-                            "ParserTokenMetadataRegistered matched, transaction_id={}",
-                            transaction.signature
-                        );
-                        parser.parse().await?;
-                        its_parsers.push(Box::new(parser));
+                    let event_type_discriminator = match bytes.get(8..16) {
+                        Some(event_type_discriminator) => event_type_discriminator,
+                        None => {
+                            warn!(
+                                "event type discriminator is out of bounds, transaction signature={}",
+                                transaction.signature
+                            );
+                            continue;
+                        }
+                    };
+
+                    match event_type_discriminator {
+                        x if x == NativeGasPaidForContractCallEvent::DISCRIMINATOR => {
+                            let mut parser = ParserNativeGasPaid::new(
+                                transaction.signature.to_string(),
+                                ci.clone(),
+                                self.gas_service_address,
+                                transaction.account_keys.clone(),
+                            )
+                            .await?;
+                            if parser.is_match().await? {
+                                info!(
+                                    "ParserNativeGasPaid matched, transaction signature={}",
+                                    transaction.signature
+                                );
+                                parser.parse().await?;
+                                let key = parser.key().await?;
+                                gas_credit_map.insert(key, Box::new(parser));
+                            }
+                        }
+                        x if x == NativeGasAddedEvent::DISCRIMINATOR => {
+                            let mut parser = ParserNativeGasAdded::new(
+                                transaction.signature.to_string(),
+                                ci.clone(),
+                                self.gas_service_address,
+                                transaction.account_keys.clone(),
+                            )
+                            .await?;
+                            if parser.is_match().await? {
+                                info!(
+                                    "ParserNativeGasAdded matched, transaction signature={}",
+                                    transaction.signature
+                                );
+                                parser.parse().await?;
+                                parsers.push(Box::new(parser));
+                            }
+                        }
+                        x if x == NativeGasRefundedEvent::DISCRIMINATOR => {
+                            let mut parser = ParserNativeGasRefunded::new(
+                                transaction.signature.to_string(),
+                                ci.clone(),
+                                self.gas_service_address,
+                                transaction.cost_units,
+                                transaction.account_keys.clone(),
+                            )
+                            .await?;
+                            if parser.is_match().await? {
+                                info!(
+                                    "ParserNativeGasRefunded matched, transaction signature={}",
+                                    transaction.signature
+                                );
+                                parser.parse().await?;
+                                parsers.push(Box::new(parser));
+                            }
+                        }
+                        x if x == CallContractEvent::DISCRIMINATOR => {
+                            let mut parser = ParserCallContract::new(
+                                transaction.signature.to_string(),
+                                ci.clone(),
+                                transaction.account_keys.clone(),
+                                chain_name.clone(),
+                                index,
+                                self.gateway_address,
+                            )
+                            .await?;
+                            if parser.is_match().await? {
+                                info!(
+                                    "ParserCallContract matched, transaction signature={}",
+                                    transaction.signature
+                                );
+                                parser.parse().await?;
+                                call_contract.push(Box::new(parser));
+                            }
+                        }
+                        x if x == MessageApprovedEvent::DISCRIMINATOR => {
+                            let mut parser = ParserMessageApproved::new(
+                                transaction.signature.to_string(),
+                                ci.clone(),
+                                self.gateway_address,
+                                transaction.account_keys.clone(),
+                            )
+                            .await?;
+                            if parser.is_match().await? {
+                                info!(
+                                    "ParserMessageApproved matched, transaction signature={}",
+                                    transaction.signature
+                                );
+                                parser.parse().await?;
+                                parsers.push(Box::new(parser));
+                                message_approved_count += 1;
+                            }
+                        }
+                        x if x == MessageExecutedEvent::DISCRIMINATOR => {
+                            let mut parser = ParserMessageExecuted::new(
+                                transaction.signature.to_string(),
+                                ci.clone(),
+                                self.gateway_address,
+                                transaction.account_keys.clone(),
+                            )
+                            .await?;
+                            if parser.is_match().await? {
+                                info!(
+                                    "ParserMessageExecuted matched, transaction signature={}",
+                                    transaction.signature
+                                );
+                                parser.parse().await?;
+                                parsers.push(Box::new(parser));
+                                message_executed_count += 1;
+                            }
+                        }
+                        x if x == CANNOT_EXECUTE_MESSAGE_EVENT_DISC => {
+                            let mut parser = ParserExecuteInsufficientGas::new(
+                                transaction.signature.to_string(),
+                                ci.clone(),
+                                self.gateway_address,
+                                transaction.account_keys.clone(),
+                            )
+                            .await?;
+                            if parser.is_match().await? {
+                                info!(
+                                    "ParserExecuteInsufficientGas matched, transaction signature={}",
+                                    transaction.signature
+                                );
+                                parser.parse().await?;
+                                parsers.push(Box::new(parser));
+                            }
+                        }
+                        x if x == VerifierSetRotatedEvent::DISCRIMINATOR => {
+                            let mut parser = ParserSignersRotated::new(
+                                transaction.signature.to_string(),
+                                ci.clone(),
+                                index,
+                                self.gateway_address,
+                                transaction.account_keys.clone(),
+                            )
+                            .await?;
+                            if parser.is_match().await? {
+                                info!(
+                                    "ParserSignersRotated matched, transaction signature={}",
+                                    transaction.signature
+                                );
+                                parser.parse().await?;
+                                parsers.push(Box::new(parser));
+                            }
+                        }
+                        x if x == ITS_INTERCHAIN_TRANSFER_EVENT_DISC => {
+                            let mut parser = ParserInterchainTransfer::new(
+                                transaction.signature.to_string(),
+                                ci.clone(),
+                                self.its_address,
+                                transaction.account_keys.clone(),
+                            )
+                            .await?;
+                            if parser.is_match().await? {
+                                info!(
+                                    "ParserInterchainTransfer matched, transaction signature={}",
+                                    transaction.signature
+                                );
+                                parser.parse().await?;
+                                its_parsers.push(Box::new(parser));
+                            }
+                        }
+                        x if x == ITS_INTERCHAIN_TOKEN_DEPLOYMENT_STARTED_EVENT_DISC => {
+                            let mut parser = ParserInterchainTokenDeploymentStarted::new(
+                                transaction.signature.to_string(),
+                                ci.clone(),
+                                self.its_address,
+                                transaction.account_keys.clone(),
+                            )
+                            .await?;
+                            if parser.is_match().await? {
+                                info!(
+                                    "ParserInterchainTokenDeploymentStarted matched, transaction signature={}",
+                                    transaction.signature
+                                );
+                                parser.parse().await?;
+                                its_parsers.push(Box::new(parser));
+                            }
+                        }
+                        x if x == ITS_LINK_TOKEN_STARTED_EVENT_DISC => {
+                            let mut parser = ParserLinkTokenStarted::new(
+                                transaction.signature.to_string(),
+                                ci.clone(),
+                                self.its_address,
+                                transaction.account_keys.clone(),
+                            )
+                            .await?;
+                            if parser.is_match().await? {
+                                info!(
+                                    "ParserLinkTokenStarted matched, transaction signature={}",
+                                    transaction.signature
+                                );
+                                parser.parse().await?;
+                                its_parsers.push(Box::new(parser));
+                            }
+                        }
+                        x if x == ITS_TOKEN_METADATA_REGISTERED_EVENT_DISC => {
+                            let mut parser = ParserTokenMetadataRegistered::new(
+                                transaction.signature.to_string(),
+                                ci.clone(),
+                                self.its_address,
+                                transaction.account_keys.clone(),
+                            )
+                            .await?;
+                            if parser.is_match().await? {
+                                info!(
+                                    "ParserTokenMetadataRegistered matched, transaction signature={}",
+                                    transaction.signature
+                                );
+                                parser.parse().await?;
+                                its_parsers.push(Box::new(parser));
+                            }
+                        }
+                        _ => {
+                            // Unknown event type discriminator; skip
+                            continue;
+                        }
                     }
                 }
             }

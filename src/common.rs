@@ -1,14 +1,13 @@
 use std::str::FromStr;
 
 use crate::error::TransactionParsingError;
-use crate::parser::ParserConfig;
 use solana_sdk::pubkey::Pubkey;
 use solana_transaction_status::UiCompiledInstruction;
-use tracing::{debug, warn};
+use tracing::warn;
 
 pub fn check_discriminators_and_address(
     instruction: &UiCompiledInstruction,
-    config: ParserConfig,
+    expected_contract_address: Pubkey,
     accounts: &[String],
 ) -> Result<Vec<u8>, TransactionParsingError> {
     let account_keys: Vec<Pubkey> = accounts
@@ -21,11 +20,7 @@ pub fn check_discriminators_and_address(
         })
         .collect::<Result<_, _>>()?;
 
-    if !validate_account_address(
-        &config.expected_contract_address,
-        instruction,
-        &account_keys,
-    )? {
+    if !validate_account_address(&expected_contract_address, instruction, &account_keys)? {
         return Err(TransactionParsingError::InvalidAccountAddress(
             "expected account did not match with actual emitter".to_string(),
         ));
@@ -41,24 +36,24 @@ pub fn check_discriminators_and_address(
         ));
     }
 
-    if bytes.get(0..8) != Some(&config.event_cpi_discriminator) {
-        debug!(
-            "expected event cpi discriminator, got {:?}",
-            bytes.get(0..8)
-        );
-        return Err(TransactionParsingError::InvalidInstructionData(
-            "expected event cpi discriminator".to_string(),
-        ));
-    }
-    if bytes.get(8..16) != Some(&config.event_type_discriminator) {
-        debug!(
-            "expected event type discriminator, got {:?}",
-            bytes.get(8..16)
-        );
-        return Err(TransactionParsingError::InvalidInstructionData(
-            "expected event type discriminator".to_string(),
-        ));
-    }
+    // if bytes.get(0..8) != Some(&config.event_cpi_discriminator) {
+    //     debug!(
+    //         "expected event cpi discriminator, got {:?}",
+    //         bytes.get(0..8)
+    //     );
+    //     return Err(TransactionParsingError::InvalidInstructionData(
+    //         "expected event cpi discriminator".to_string(),
+    //     ));
+    // }
+    // if bytes.get(8..16) != Some(&config.event_type_discriminator) {
+    //     debug!(
+    //         "expected event type discriminator, got {:?}",
+    //         bytes.get(8..16)
+    //     );
+    //     return Err(TransactionParsingError::InvalidInstructionData(
+    //         "expected event type discriminator".to_string(),
+    //     ));
+    // }
     Ok(bytes
         .get(16..)
         .ok_or_else(|| {

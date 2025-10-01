@@ -1,36 +1,20 @@
 use crate::common::check_discriminators_and_address;
-use crate::discriminators::{CPI_EVENT_DISC, NATIVE_GAS_PAID_EVENT_DISC};
 use crate::error::TransactionParsingError;
 use crate::message_matching_key::MessageMatchingKey;
-use crate::parser::{Parser, ParserConfig};
+use crate::parser::Parser;
 use async_trait::async_trait;
+use axelar_solana_gas_service::events::NativeGasPaidForContractCallEvent;
 use borsh::BorshDeserialize;
 use relayer_core::gmp_api::gmp_types::{Amount, CommonEventFields, Event, EventMetadata};
 use solana_sdk::pubkey::Pubkey;
 use solana_transaction_status::UiCompiledInstruction;
 use tracing::debug;
 
-#[derive(BorshDeserialize, Clone, Debug)]
-pub struct NativeGasPaidForContractCallEvent {
-    /// The Gas service config PDA
-    pub _config_pda: Pubkey,
-    /// Destination chain on the Axelar network
-    pub destination_chain: String,
-    /// Destination address on the Axelar network
-    pub destination_address: String,
-    /// The payload hash for the event we're paying for
-    pub payload_hash: [u8; 32],
-    /// The refund address
-    pub refund_address: Pubkey,
-    /// The amount of SOL to send
-    pub gas_fee_amount: u64,
-}
-
 pub struct ParserNativeGasPaid {
     signature: String,
     parsed: Option<NativeGasPaidForContractCallEvent>,
     instruction: UiCompiledInstruction,
-    config: ParserConfig,
+    expected_contract_address: Pubkey,
     accounts: Vec<String>,
 }
 
@@ -45,22 +29,19 @@ impl ParserNativeGasPaid {
             signature,
             parsed: None,
             instruction,
-            config: ParserConfig {
-                event_cpi_discriminator: CPI_EVENT_DISC,
-                event_type_discriminator: NATIVE_GAS_PAID_EVENT_DISC,
-                expected_contract_address,
-            },
+            expected_contract_address,
             accounts,
         })
     }
 
     fn try_extract_with_config(
         instruction: &UiCompiledInstruction,
-        config: ParserConfig,
+        expected_contract_address: Pubkey,
         accounts: &[String],
     ) -> Result<NativeGasPaidForContractCallEvent, TransactionParsingError> {
-        let payload = check_discriminators_and_address(instruction, config, accounts)?;
-        match NativeGasPaidForContractCallEvent::try_from_slice(payload.into_iter().as_slice()) {
+        let payload =
+            check_discriminators_and_address(instruction, expected_contract_address, accounts)?;
+        match NativeGasPaidForContractCallEvent::try_from_slice(&payload) {
             Ok(event) => {
                 debug!("Native Gas Paid for Contract Call event={:?}", event);
                 Ok(event)
@@ -78,7 +59,7 @@ impl Parser for ParserNativeGasPaid {
         if self.parsed.is_none() {
             self.parsed = Some(Self::try_extract_with_config(
                 &self.instruction,
-                self.config,
+                self.expected_contract_address,
                 &self.accounts,
             )?);
         }
@@ -86,7 +67,11 @@ impl Parser for ParserNativeGasPaid {
     }
 
     async fn is_match(&mut self) -> Result<bool, TransactionParsingError> {
-        match Self::try_extract_with_config(&self.instruction, self.config, &self.accounts) {
+        match Self::try_extract_with_config(
+            &self.instruction,
+            self.expected_contract_address,
+            &self.accounts,
+        ) {
             Ok(parsed) => {
                 self.parsed = Some(parsed);
                 Ok(true)

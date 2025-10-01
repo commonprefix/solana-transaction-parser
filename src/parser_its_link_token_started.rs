@@ -1,8 +1,7 @@
 use crate::common::check_discriminators_and_address;
-use crate::discriminators::{CPI_EVENT_DISC, ITS_LINK_TOKEN_STARTED_EVENT_DISC};
 use crate::error::TransactionParsingError;
 use crate::message_matching_key::MessageMatchingKey;
-use crate::parser::{Parser, ParserConfig};
+use crate::parser::Parser;
 use async_trait::async_trait;
 use borsh::BorshDeserialize;
 use relayer_core::gmp_api::gmp_types::{CommonEventFields, Event, EventMetadata, TokenManagerType};
@@ -24,7 +23,7 @@ pub struct ParserLinkTokenStarted {
     signature: String,
     parsed: Option<LinkTokenStarted>,
     instruction: UiCompiledInstruction,
-    config: ParserConfig,
+    expected_contract_address: Pubkey,
     accounts: Vec<String>,
 }
 
@@ -39,21 +38,18 @@ impl ParserLinkTokenStarted {
             signature,
             parsed: None,
             instruction,
-            config: ParserConfig {
-                event_cpi_discriminator: CPI_EVENT_DISC,
-                event_type_discriminator: ITS_LINK_TOKEN_STARTED_EVENT_DISC,
-                expected_contract_address,
-            },
+            expected_contract_address,
             accounts,
         })
     }
 
     fn try_extract_with_config(
         instruction: &UiCompiledInstruction,
-        config: ParserConfig,
+        expected_contract_address: Pubkey,
         accounts: &[String],
     ) -> Result<LinkTokenStarted, TransactionParsingError> {
-        let payload = check_discriminators_and_address(instruction, config, accounts)?;
+        let payload =
+            check_discriminators_and_address(instruction, expected_contract_address, accounts)?;
         match LinkTokenStarted::try_from_slice(payload.into_iter().as_slice()) {
             Ok(event) => {
                 debug!("Link Token Started event={:?}", event);
@@ -72,7 +68,7 @@ impl Parser for ParserLinkTokenStarted {
         if self.parsed.is_none() {
             self.parsed = Some(Self::try_extract_with_config(
                 &self.instruction,
-                self.config,
+                self.expected_contract_address,
                 &self.accounts,
             )?);
         }
@@ -80,7 +76,11 @@ impl Parser for ParserLinkTokenStarted {
     }
 
     async fn is_match(&mut self) -> Result<bool, TransactionParsingError> {
-        match Self::try_extract_with_config(&self.instruction, self.config, &self.accounts) {
+        match Self::try_extract_with_config(
+            &self.instruction,
+            self.expected_contract_address,
+            &self.accounts,
+        ) {
             Ok(parsed) => {
                 self.parsed = Some(parsed);
                 Ok(true)

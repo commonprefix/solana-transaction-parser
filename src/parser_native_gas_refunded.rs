@@ -1,10 +1,10 @@
 use crate::common::check_discriminators_and_address;
-use crate::discriminators::{CPI_EVENT_DISC, NATIVE_GAS_REFUNDED_EVENT_DISC};
 use crate::error::TransactionParsingError;
 use crate::instruction_index::InstructionIndex;
 use crate::message_matching_key::MessageMatchingKey;
-use crate::parser::{Parser, ParserConfig};
+use crate::parser::Parser;
 use async_trait::async_trait;
+use axelar_solana_gas_service::events::NativeGasRefundedEvent;
 use borsh::BorshDeserialize;
 use relayer_core::gmp_api::gmp_types::{Amount, CommonEventFields, Event, EventMetadata};
 use solana_sdk::pubkey::Pubkey;
@@ -12,25 +12,11 @@ use solana_sdk::signature::Signature;
 use solana_transaction_status::UiCompiledInstruction;
 use tracing::debug;
 
-#[derive(BorshDeserialize, Clone, Debug)]
-pub struct NativeGasRefundedEvent {
-    /// Solana transaction signature
-    pub tx_hash: [u8; 64],
-    /// The Gas service config PDA
-    pub _config_pda: Pubkey,
-    /// The log index
-    pub log_index: String,
-    /// The receiver of the refund
-    pub receiver: Pubkey,
-    /// amount of SOL
-    pub fees: u64,
-}
-
 pub struct ParserNativeGasRefunded {
     signature: String,
     parsed: Option<NativeGasRefundedEvent>,
     instruction: UiCompiledInstruction,
-    config: ParserConfig,
+    expected_contract_address: Pubkey,
     cost_units: u64,
     accounts: Vec<String>,
 }
@@ -47,11 +33,7 @@ impl ParserNativeGasRefunded {
             signature,
             parsed: None,
             instruction,
-            config: ParserConfig {
-                event_cpi_discriminator: CPI_EVENT_DISC,
-                event_type_discriminator: NATIVE_GAS_REFUNDED_EVENT_DISC,
-                expected_contract_address,
-            },
+            expected_contract_address,
             cost_units,
             accounts,
         })
@@ -59,10 +41,11 @@ impl ParserNativeGasRefunded {
 
     fn try_extract_with_config(
         instruction: &UiCompiledInstruction,
-        config: ParserConfig,
+        expected_contract_address: Pubkey,
         accounts: &[String],
     ) -> Result<NativeGasRefundedEvent, TransactionParsingError> {
-        let payload = check_discriminators_and_address(instruction, config, accounts)?;
+        let payload =
+            check_discriminators_and_address(instruction, expected_contract_address, accounts)?;
         match NativeGasRefundedEvent::try_from_slice(payload.into_iter().as_slice()) {
             Ok(event) => {
                 debug!("Native Gas Refunded event={:?}", event);
@@ -81,7 +64,7 @@ impl Parser for ParserNativeGasRefunded {
         if self.parsed.is_none() {
             self.parsed = Some(Self::try_extract_with_config(
                 &self.instruction,
-                self.config,
+                self.expected_contract_address,
                 &self.accounts,
             )?);
         }
@@ -89,7 +72,11 @@ impl Parser for ParserNativeGasRefunded {
     }
 
     async fn is_match(&mut self) -> Result<bool, TransactionParsingError> {
-        match Self::try_extract_with_config(&self.instruction, self.config, &self.accounts) {
+        match Self::try_extract_with_config(
+            &self.instruction,
+            self.expected_contract_address,
+            &self.accounts,
+        ) {
             Ok(parsed) => {
                 self.parsed = Some(parsed);
                 Ok(true)
@@ -148,7 +135,8 @@ impl Parser for ParserNativeGasRefunded {
     async fn message_id(&self) -> Result<Option<String>, TransactionParsingError> {
         if let Some(parsed) = self.parsed.clone() {
             // Deserialize and then reserialize to ensure that formatting is correct
-            let index = InstructionIndex::deserialize(parsed.log_index)?;
+            // TODO : Contracts need to be emitting strings here instead of u64 so to_string wont be necessary
+            let index = InstructionIndex::deserialize(parsed.log_index.to_string())?;
             Ok(Some(format!(
                 "{}-{}",
                 Signature::from(parsed.tx_hash),

@@ -17,6 +17,7 @@ pub mod parser_native_gas_paid;
 pub mod parser_native_gas_refunded;
 pub mod parser_signers_rotated;
 pub mod types;
+pub use relayer_core::gmp_api::gmp_types;
 
 #[cfg(test)]
 pub mod test_utils;

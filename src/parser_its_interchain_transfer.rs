@@ -1,10 +1,9 @@
 use std::collections::HashMap;
 
 use crate::common::check_discriminators_and_address;
-use crate::discriminators::{CPI_EVENT_DISC, ITS_INTERCHAIN_TRANSFER_EVENT_DISC};
 use crate::error::TransactionParsingError;
 use crate::message_matching_key::MessageMatchingKey;
-use crate::parser::{Parser, ParserConfig};
+use crate::parser::Parser;
 use async_trait::async_trait;
 use borsh::BorshDeserialize;
 use relayer_core::gmp_api::gmp_types::{Amount, CommonEventFields, Event, EventMetadata};
@@ -27,7 +26,7 @@ pub struct ParserInterchainTransfer {
     signature: String,
     parsed: Option<InterchainTransfer>,
     instruction: UiCompiledInstruction,
-    config: ParserConfig,
+    expected_contract_address: Pubkey,
     accounts: Vec<String>,
 }
 
@@ -42,21 +41,18 @@ impl ParserInterchainTransfer {
             signature,
             parsed: None,
             instruction,
-            config: ParserConfig {
-                event_cpi_discriminator: CPI_EVENT_DISC,
-                event_type_discriminator: ITS_INTERCHAIN_TRANSFER_EVENT_DISC,
-                expected_contract_address,
-            },
+            expected_contract_address,
             accounts,
         })
     }
 
     fn try_extract_with_config(
         instruction: &UiCompiledInstruction,
-        config: ParserConfig,
+        expected_contract_address: Pubkey,
         accounts: &[String],
     ) -> Result<InterchainTransfer, TransactionParsingError> {
-        let payload = check_discriminators_and_address(instruction, config, accounts)?;
+        let payload =
+            check_discriminators_and_address(instruction, expected_contract_address, accounts)?;
         match InterchainTransfer::try_from_slice(payload.into_iter().as_slice()) {
             Ok(event) => {
                 debug!("Interchain Transfer event={:?}", event);
@@ -75,7 +71,7 @@ impl Parser for ParserInterchainTransfer {
         if self.parsed.is_none() {
             self.parsed = Some(Self::try_extract_with_config(
                 &self.instruction,
-                self.config,
+                self.expected_contract_address,
                 &self.accounts,
             )?);
         }
@@ -83,7 +79,11 @@ impl Parser for ParserInterchainTransfer {
     }
 
     async fn is_match(&mut self) -> Result<bool, TransactionParsingError> {
-        match Self::try_extract_with_config(&self.instruction, self.config, &self.accounts) {
+        match Self::try_extract_with_config(
+            &self.instruction,
+            self.expected_contract_address,
+            &self.accounts,
+        ) {
             Ok(parsed) => {
                 self.parsed = Some(parsed);
                 Ok(true)

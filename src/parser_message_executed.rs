@@ -1,9 +1,9 @@
 use crate::common::check_discriminators_and_address;
-use crate::discriminators::{CPI_EVENT_DISC, MESSAGE_EXECUTED_EVENT_DISC};
 use crate::error::TransactionParsingError;
 use crate::message_matching_key::MessageMatchingKey;
-use crate::parser::{Parser, ParserConfig};
+use crate::parser::Parser;
 use async_trait::async_trait;
+use axelar_solana_gateway::events::MessageExecutedEvent;
 use borsh::BorshDeserialize;
 use bs58::encode;
 use relayer_core::gmp_api::gmp_types::{
@@ -14,22 +14,11 @@ use solana_sdk::pubkey::Pubkey;
 use solana_transaction_status::UiCompiledInstruction;
 use tracing::debug;
 
-#[derive(BorshDeserialize, Clone, Debug)]
-pub struct MessageExecutedEvent {
-    pub command_id: [u8; 32],
-    pub _destination_address: Pubkey,
-    pub _payload_hash: [u8; 32],
-    pub source_chain: String,
-    pub message_id: String,
-    pub _source_address: String,
-    pub _destination_chain: String,
-}
-
 pub struct ParserMessageExecuted {
     signature: String,
     parsed: Option<MessageExecutedEvent>,
     instruction: UiCompiledInstruction,
-    config: ParserConfig,
+    expected_contract_address: Pubkey,
     accounts: Vec<String>,
 }
 
@@ -44,21 +33,18 @@ impl ParserMessageExecuted {
             signature,
             parsed: None,
             instruction,
-            config: ParserConfig {
-                event_cpi_discriminator: CPI_EVENT_DISC,
-                event_type_discriminator: MESSAGE_EXECUTED_EVENT_DISC,
-                expected_contract_address,
-            },
+            expected_contract_address,
             accounts,
         })
     }
 
     fn try_extract_with_config(
         instruction: &UiCompiledInstruction,
-        config: ParserConfig,
+        expected_contract_address: Pubkey,
         accounts: &[String],
     ) -> Result<MessageExecutedEvent, TransactionParsingError> {
-        let payload = check_discriminators_and_address(instruction, config, accounts)?;
+        let payload =
+            check_discriminators_and_address(instruction, expected_contract_address, accounts)?;
         match MessageExecutedEvent::try_from_slice(payload.into_iter().as_slice()) {
             Ok(event) => {
                 debug!("Message Executed event={:?}", event);
@@ -77,7 +63,7 @@ impl Parser for ParserMessageExecuted {
         if self.parsed.is_none() {
             self.parsed = Some(Self::try_extract_with_config(
                 &self.instruction,
-                self.config,
+                self.expected_contract_address,
                 &self.accounts,
             )?);
         }
@@ -85,7 +71,11 @@ impl Parser for ParserMessageExecuted {
     }
 
     async fn is_match(&mut self) -> Result<bool, TransactionParsingError> {
-        match Self::try_extract_with_config(&self.instruction, self.config, &self.accounts) {
+        match Self::try_extract_with_config(
+            &self.instruction,
+            self.expected_contract_address,
+            &self.accounts,
+        ) {
             Ok(parsed) => {
                 self.parsed = Some(parsed);
                 Ok(true)
@@ -124,7 +114,7 @@ impl Parser for ParserMessageExecuted {
                     revert_reason: None,
                 }),
             },
-            message_id: parsed.message_id.clone(),
+            message_id: parsed.cc_id.clone(),
             source_chain: parsed.source_chain,
             status: MessageExecutionStatus::SUCCESSFUL,
             cost: Amount {
@@ -197,7 +187,7 @@ mod tests {
                             revert_reason: None,
                         }),
                     },
-                    message_id: parser.parsed.as_ref().unwrap().message_id.clone(),
+                    message_id: parser.parsed.as_ref().unwrap().cc_id.clone(),
                     source_chain: parser.parsed.as_ref().unwrap().source_chain.clone(),
                     status: MessageExecutionStatus::SUCCESSFUL,
                     cost: Amount {
