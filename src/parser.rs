@@ -191,7 +191,7 @@ impl TransactionParser {
                         continue;
                     }
 
-                    if bytes.get(0..8) != Some(&CPI_EVENT_DISC) {
+                    if bytes.get(0..8) != Some(CPI_EVENT_DISC) {
                         warn!(
                             "expected event cpi discriminator, transaction signature={}",
                             transaction.signature
