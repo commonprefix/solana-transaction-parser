@@ -203,12 +203,12 @@ impl TransactionParser {
                             .checked_add(1)
                             .ok_or(TransactionParsingError::IndexOverflow(
                                 "Outer index overflow".to_string(),
-                            ))? as u64,
+                            ))? as u8,
                         inner_index
                             .checked_add(1)
                             .ok_or(TransactionParsingError::IndexOverflow(
                                 "Inner index overflow".to_string(),
-                            ))? as u64,
+                            ))? as u8,
                     );
 
                     let event_type_discriminator = match bytes.get(8..16) {
@@ -470,7 +470,7 @@ mod tests {
         let txs = transaction_fixtures();
         let parser = TransactionParser::new(
             "solana".to_string(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            Pubkey::from_str("H9XpBVCnYxr7cHd66nqtD8RSTrKY6JC32XVu2zT2kBmP").unwrap(),
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
         );
@@ -512,7 +512,7 @@ mod tests {
         let txs = transaction_fixtures();
         let parser = TransactionParser::new(
             "solana".to_string(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            Pubkey::from_str("H9XpBVCnYxr7cHd66nqtD8RSTrKY6JC32XVu2zT2kBmP").unwrap(),
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
         );
@@ -537,7 +537,7 @@ mod tests {
         let txs = transaction_fixtures();
         let parser = TransactionParser::new(
             "solana".to_string(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            Pubkey::from_str("H9XpBVCnYxr7cHd66nqtD8RSTrKY6JC32XVu2zT2kBmP").unwrap(),
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
         );
@@ -569,7 +569,7 @@ mod tests {
         let txs = transaction_fixtures();
         let parser = TransactionParser::new(
             "solana".to_string(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            Pubkey::from_str("H9XpBVCnYxr7cHd66nqtD8RSTrKY6JC32XVu2zT2kBmP").unwrap(),
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
         );
@@ -593,7 +593,7 @@ mod tests {
         let txs = transaction_fixtures();
         let parser = TransactionParser::new(
             "solana".to_string(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            Pubkey::from_str("H9XpBVCnYxr7cHd66nqtD8RSTrKY6JC32XVu2zT2kBmP").unwrap(),
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
         );
@@ -625,7 +625,7 @@ mod tests {
         let txs = transaction_fixtures();
         let parser = TransactionParser::new(
             "solana".to_string(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            Pubkey::from_str("H9XpBVCnYxr7cHd66nqtD8RSTrKY6JC32XVu2zT2kBmP").unwrap(),
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
         );
@@ -649,7 +649,7 @@ mod tests {
         let txs = transaction_fixtures();
         let parser = TransactionParser::new(
             "solana".to_string(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            Pubkey::from_str("H9XpBVCnYxr7cHd66nqtD8RSTrKY6JC32XVu2zT2kBmP").unwrap(),
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
         );
@@ -670,7 +670,7 @@ mod tests {
         let txs = transaction_fixtures();
         let parser = TransactionParser::new(
             "solana".to_string(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            Pubkey::from_str("H9XpBVCnYxr7cHd66nqtD8RSTrKY6JC32XVu2zT2kBmP").unwrap(),
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
         );
@@ -696,7 +696,7 @@ mod tests {
         let txs = transaction_fixtures();
         let parser = TransactionParser::new(
             "solana".to_string(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            Pubkey::from_str("H9XpBVCnYxr7cHd66nqtD8RSTrKY6JC32XVu2zT2kBmP").unwrap(),
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
             Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
         );

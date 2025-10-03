@@ -151,7 +151,7 @@ mod tests {
         let mut parser = ParserNativeGasPaid::new(
             tx.signature.to_string(),
             compiled_ix,
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            Pubkey::from_str("H9XpBVCnYxr7cHd66nqtD8RSTrKY6JC32XVu2zT2kBmP").unwrap(),
             tx.account_keys,
         )
         .await
@@ -200,7 +200,7 @@ mod tests {
         let mut parser = ParserNativeGasPaid::new(
             tx.signature.to_string(),
             compiled_ix,
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            Pubkey::from_str("H9XpBVCnYxr7cHd66nqtD8RSTrKY6JC32XVu2zT2kBmP").unwrap(),
             tx.account_keys,
         )
         .await

@@ -134,9 +134,8 @@ impl Parser for ParserNativeGasRefunded {
 
     async fn message_id(&self) -> Result<Option<String>, TransactionParsingError> {
         if let Some(parsed) = self.parsed.clone() {
-            // Deserialize and then reserialize to ensure that formatting is correct
-            // TODO : Contracts need to be emitting strings here instead of u64 so to_string wont be necessary
-            let index = InstructionIndex::deserialize(parsed.log_index.to_string())?;
+            // NOTE: These are emitted by the Programs as 1-indexed to mirror axelarscan and solscan
+            let index = InstructionIndex::new(parsed.ix_index, parsed.event_ix_index);
             Ok(Some(format!(
                 "{}-{}",
                 Signature::from(parsed.tx_hash),
@@ -171,7 +170,7 @@ mod tests {
         let mut parser = ParserNativeGasRefunded::new(
             tx.signature.to_string(),
             compiled_ix,
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            Pubkey::from_str("H9XpBVCnYxr7cHd66nqtD8RSTrKY6JC32XVu2zT2kBmP").unwrap(),
             tx.cost_units,
             tx.account_keys,
         )
@@ -197,9 +196,10 @@ mod tests {
                         }),
                     },
                     message_id: format!(
-                        "{}-{}",
+                        "{}-{}.{}",
                         Signature::from(parser.parsed.as_ref().unwrap().tx_hash),
-                        parser.parsed.as_ref().unwrap().log_index
+                        parser.parsed.as_ref().unwrap().ix_index,
+                        parser.parsed.as_ref().unwrap().event_ix_index
                     ),
                     recipient_address: parser.parsed.as_ref().unwrap().receiver.to_string(),
                     refunded_amount: Amount {
