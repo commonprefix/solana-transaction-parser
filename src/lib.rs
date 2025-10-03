@@ -5,7 +5,6 @@ pub mod instruction_index;
 pub mod message_matching_key;
 pub mod parser;
 pub mod parser_call_contract;
-pub mod parser_execute_insufficient_gas;
 pub mod parser_its_interchain_token_deployment_started;
 pub mod parser_its_interchain_transfer;
 pub mod parser_its_link_token_started;

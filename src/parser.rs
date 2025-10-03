@@ -1,9 +1,10 @@
 use super::message_matching_key::MessageMatchingKey;
 use crate::discriminators::{
-    CANNOT_EXECUTE_MESSAGE_EVENT_DISC, CPI_EVENT_DISC,
-    ITS_INTERCHAIN_TOKEN_DEPLOYMENT_STARTED_EVENT_DISC, ITS_INTERCHAIN_TRANSFER_EVENT_DISC,
-    ITS_LINK_TOKEN_STARTED_EVENT_DISC, ITS_TOKEN_METADATA_REGISTERED_EVENT_DISC,
+    CPI_EVENT_DISC, ITS_INTERCHAIN_TOKEN_DEPLOYMENT_STARTED_EVENT_DISC,
+    ITS_INTERCHAIN_TRANSFER_EVENT_DISC, ITS_LINK_TOKEN_STARTED_EVENT_DISC,
+    ITS_TOKEN_METADATA_REGISTERED_EVENT_DISC,
 };
+use crate::error::TransactionParsingError;
 use crate::instruction_index::InstructionIndex;
 use crate::parser_call_contract::ParserCallContract;
 use crate::parser_its_interchain_token_deployment_started::ParserInterchainTokenDeploymentStarted;
@@ -17,9 +18,6 @@ use crate::parser_native_gas_paid::ParserNativeGasPaid;
 use crate::parser_native_gas_refunded::ParserNativeGasRefunded;
 use crate::parser_signers_rotated::ParserSignersRotated;
 use crate::types::SolanaTransaction;
-use crate::{
-    error::TransactionParsingError, parser_execute_insufficient_gas::ParserExecuteInsufficientGas,
-};
 use async_trait::async_trait;
 use axelar_solana_gas_service::events::{
     NativeGasAddedEvent, NativeGasPaidForContractCallEvent, NativeGasRefundedEvent,
@@ -331,23 +329,6 @@ impl TransactionParser {
                                 parser.parse().await?;
                                 parsers.push(Box::new(parser));
                                 message_executed_count += 1;
-                            }
-                        }
-                        x if x == CANNOT_EXECUTE_MESSAGE_EVENT_DISC => {
-                            let mut parser = ParserExecuteInsufficientGas::new(
-                                transaction.signature.to_string(),
-                                ci.clone(),
-                                self.gateway_address,
-                                transaction.account_keys.clone(),
-                            )
-                            .await?;
-                            if parser.is_match().await? {
-                                info!(
-                                    "ParserExecuteInsufficientGas matched, transaction signature={}",
-                                    transaction.signature
-                                );
-                                parser.parse().await?;
-                                parsers.push(Box::new(parser));
                             }
                         }
                         x if x == VerifierSetRotatedEvent::DISCRIMINATOR => {
