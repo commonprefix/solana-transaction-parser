@@ -3,11 +3,11 @@ use crate::error::TransactionParsingError;
 use crate::instruction_index::InstructionIndex;
 use crate::message_matching_key::MessageMatchingKey;
 use crate::parser::Parser;
+use anchor_lang::AnchorDeserialize;
 use async_trait::async_trait;
 use axelar_solana_gateway::events::CallContractEvent;
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
-use borsh::BorshDeserialize;
 use relayer_core::gmp_api::gmp_types::{CommonEventFields, Event, EventMetadata, GatewayV2Message};
 use solana_sdk::pubkey::Pubkey;
 use solana_transaction_status::UiCompiledInstruction;
@@ -51,7 +51,7 @@ impl ParserCallContract {
     ) -> Result<CallContractEvent, TransactionParsingError> {
         let payload =
             check_discriminators_and_address(instruction, expected_contract_address, accounts)?;
-        match CallContractEvent::try_from_slice(&payload) {
+        match CallContractEvent::deserialize(&mut payload.as_slice()) {
             Ok(event) => {
                 debug!("Call Contract event={:?}", event);
                 Ok(event)

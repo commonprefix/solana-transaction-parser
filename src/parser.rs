@@ -18,6 +18,7 @@ use crate::parser_native_gas_paid::ParserNativeGasPaid;
 use crate::parser_native_gas_refunded::ParserNativeGasRefunded;
 use crate::parser_signers_rotated::ParserSignersRotated;
 use crate::types::SolanaTransaction;
+use anchor_lang::Discriminator;
 use async_trait::async_trait;
 use axelar_solana_gas_service::events::{
     NativeGasAddedEvent, NativeGasPaidForContractCallEvent, NativeGasRefundedEvent,
@@ -25,7 +26,7 @@ use axelar_solana_gas_service::events::{
 use axelar_solana_gateway::events::{
     CallContractEvent, MessageApprovedEvent, MessageExecutedEvent, VerifierSetRotatedEvent,
 };
-use event_cpi::Discriminator;
+//use event_cpi::Discriminator;
 use relayer_core::gmp_api::gmp_types::Event;
 use solana_sdk::pubkey::Pubkey;
 use solana_transaction_status::UiInstruction;

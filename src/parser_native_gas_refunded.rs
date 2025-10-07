@@ -3,9 +3,9 @@ use crate::error::TransactionParsingError;
 use crate::instruction_index::InstructionIndex;
 use crate::message_matching_key::MessageMatchingKey;
 use crate::parser::Parser;
+use anchor_lang::AnchorDeserialize;
 use async_trait::async_trait;
 use axelar_solana_gas_service::events::NativeGasRefundedEvent;
-use borsh::BorshDeserialize;
 use relayer_core::gmp_api::gmp_types::{Amount, CommonEventFields, Event, EventMetadata};
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signature;
@@ -46,7 +46,7 @@ impl ParserNativeGasRefunded {
     ) -> Result<NativeGasRefundedEvent, TransactionParsingError> {
         let payload =
             check_discriminators_and_address(instruction, expected_contract_address, accounts)?;
-        match NativeGasRefundedEvent::try_from_slice(payload.into_iter().as_slice()) {
+        match NativeGasRefundedEvent::deserialize(&mut payload.as_slice()) {
             Ok(event) => {
                 debug!("Native Gas Refunded event={:?}", event);
                 Ok(event)

@@ -3,9 +3,9 @@ use crate::error::TransactionParsingError;
 use crate::instruction_index::InstructionIndex;
 use crate::message_matching_key::MessageMatchingKey;
 use crate::parser::Parser;
+use anchor_lang::AnchorDeserialize;
 use async_trait::async_trait;
 use axelar_solana_gas_service::events::NativeGasAddedEvent;
-use borsh::BorshDeserialize;
 use relayer_core::gmp_api::gmp_types::{Amount, CommonEventFields, Event, EventMetadata};
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signature;
@@ -43,7 +43,7 @@ impl ParserNativeGasAdded {
     ) -> Result<NativeGasAddedEvent, TransactionParsingError> {
         let payload =
             check_discriminators_and_address(instruction, expected_contract_address, accounts)?;
-        match NativeGasAddedEvent::try_from_slice(&payload) {
+        match NativeGasAddedEvent::deserialize(&mut payload.as_slice()) {
             Ok(event) => {
                 debug!("Native Gas Added event={:?}", event);
                 Ok(event)

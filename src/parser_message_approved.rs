@@ -2,9 +2,9 @@ use crate::common::check_discriminators_and_address;
 use crate::error::TransactionParsingError;
 use crate::message_matching_key::MessageMatchingKey;
 use crate::parser::Parser;
+use anchor_lang::AnchorDeserialize;
 use async_trait::async_trait;
 use axelar_solana_gateway::events::MessageApprovedEvent;
-use borsh::BorshDeserialize;
 use bs58::encode;
 use relayer_core::gmp_api::gmp_types::{
     Amount, CommonEventFields, Event, EventMetadata, GatewayV2Message, MessageApprovedEventMetadata,
@@ -44,7 +44,7 @@ impl ParserMessageApproved {
     ) -> Result<MessageApprovedEvent, TransactionParsingError> {
         let payload =
             check_discriminators_and_address(instruction, expected_contract_address, accounts)?;
-        match MessageApprovedEvent::try_from_slice(payload.into_iter().as_slice()) {
+        match MessageApprovedEvent::deserialize(&mut payload.as_slice()) {
             Ok(event) => {
                 debug!("Message Approved event={:?}", event);
                 Ok(event)

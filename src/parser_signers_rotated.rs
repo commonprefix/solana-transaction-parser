@@ -3,9 +3,9 @@ use crate::error::TransactionParsingError;
 use crate::instruction_index::InstructionIndex;
 use crate::message_matching_key::MessageMatchingKey;
 use crate::parser::Parser;
+use anchor_lang::AnchorDeserialize;
 use async_trait::async_trait;
 use axelar_solana_gateway::events::VerifierSetRotatedEvent;
-use borsh::BorshDeserialize;
 use relayer_core::gmp_api::gmp_types::{
     CommonEventFields, Event, EventMetadata, SignersRotatedEventMetadata,
 };
@@ -47,7 +47,7 @@ impl ParserSignersRotated {
     ) -> Result<VerifierSetRotatedEvent, TransactionParsingError> {
         let payload =
             check_discriminators_and_address(instruction, expected_contract_address, accounts)?;
-        match VerifierSetRotatedEvent::try_from_slice(&payload) {
+        match VerifierSetRotatedEvent::deserialize(&mut payload.as_slice()) {
             Ok(event) => {
                 debug!("Verifier Set Rotated event={:?}", event);
                 Ok(event)
@@ -98,16 +98,7 @@ impl Parser for ParserSignersRotated {
             .clone()
             .ok_or_else(|| TransactionParsingError::Message("Missing parsed".to_string()))?;
 
-        let epoch = {
-            let le = parsed.epoch.to_le_bytes();
-            let first8 = le.get(..8).ok_or_else(|| {
-                TransactionParsingError::InvalidInstructionData("epoch too short".to_string())
-            })?;
-            let arr: [u8; 8] = first8.try_into().map_err(|_| {
-                TransactionParsingError::InvalidInstructionData("epoch cast failed".to_string())
-            })?;
-            u64::from_le_bytes(arr)
-        };
+        let epoch = parsed.epoch.as_u64();
 
         Ok(Event::SignersRotated {
             common: CommonEventFields {
@@ -189,11 +180,7 @@ mod tests {
                             signers_hash: Some(hex::encode(
                                 parser.parsed.as_ref().unwrap().verifier_set_hash,
                             )),
-                            epoch: Some(u64::from_le_bytes(
-                                parser.parsed.as_ref().unwrap().epoch.to_le_bytes()[..8]
-                                    .try_into()
-                                    .unwrap(),
-                            )),
+                            epoch: Some(parser.parsed.as_ref().unwrap().epoch.as_u64()),
                         }),
                     },
                     message_id: format!(
