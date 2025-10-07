@@ -521,7 +521,7 @@ dependencies = [
 [[package]]
 name = "anchor-discriminators"
 version = "0.1.0"
-source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=emit-cpi-gas-service-events#ea57c7733e0955bcbdd6b1bb702a53469603870b"
+source = "git+https://github.com/eigerco/axelar-amplifier-solana?branch=emit-cpi#5deb8972a6af012e2f97711a1917e561d6d74cba"
 dependencies = [
  "borsh 1.5.7",
  "bs58",
@@ -533,7 +533,7 @@ dependencies = [
 [[package]]
 name = "anchor-discriminators-macros"
 version = "0.1.0"
-source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=emit-cpi-gas-service-events#ea57c7733e0955bcbdd6b1bb702a53469603870b"
+source = "git+https://github.com/eigerco/axelar-amplifier-solana?branch=emit-cpi#5deb8972a6af012e2f97711a1917e561d6d74cba"
 dependencies = [
  "anchor-discriminators",
  "borsh 1.5.7",
@@ -1253,7 +1253,7 @@ dependencies = [
 [[package]]
 name = "axelar-message-primitives"
 version = "0.1.0"
-source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=emit-cpi-gas-service-events#ea57c7733e0955bcbdd6b1bb702a53469603870b"
+source = "git+https://github.com/eigerco/axelar-amplifier-solana?branch=emit-cpi#5deb8972a6af012e2f97711a1917e561d6d74cba"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
@@ -1267,7 +1267,7 @@ dependencies = [
 [[package]]
 name = "axelar-solana-encoding"
 version = "0.1.0"
-source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=emit-cpi-gas-service-events#ea57c7733e0955bcbdd6b1bb702a53469603870b"
+source = "git+https://github.com/eigerco/axelar-amplifier-solana?branch=emit-cpi#5deb8972a6af012e2f97711a1917e561d6d74cba"
 dependencies = [
  "arrayref",
  "borsh 1.5.7",
@@ -1283,7 +1283,7 @@ dependencies = [
 [[package]]
 name = "axelar-solana-gas-service"
 version = "0.1.0"
-source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=emit-cpi-gas-service-events#ea57c7733e0955bcbdd6b1bb702a53469603870b"
+source = "git+https://github.com/eigerco/axelar-amplifier-solana?branch=emit-cpi#5deb8972a6af012e2f97711a1917e561d6d74cba"
 dependencies = [
  "anchor-discriminators",
  "anchor-discriminators-macros",
@@ -1301,7 +1301,7 @@ dependencies = [
 [[package]]
 name = "axelar-solana-gateway"
 version = "0.1.0"
-source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=emit-cpi-gas-service-events#ea57c7733e0955bcbdd6b1bb702a53469603870b"
+source = "git+https://github.com/eigerco/axelar-amplifier-solana?branch=emit-cpi#5deb8972a6af012e2f97711a1917e561d6d74cba"
 dependencies = [
  "alloy-sol-types",
  "anchor-discriminators",
@@ -2981,7 +2981,7 @@ dependencies = [
 [[package]]
 name = "event-cpi"
 version = "0.1.0"
-source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=emit-cpi-gas-service-events#ea57c7733e0955bcbdd6b1bb702a53469603870b"
+source = "git+https://github.com/eigerco/axelar-amplifier-solana?branch=emit-cpi#5deb8972a6af012e2f97711a1917e561d6d74cba"
 dependencies = [
  "anchor-discriminators",
  "borsh 1.5.7",
@@ -2990,7 +2990,7 @@ dependencies = [
 [[package]]
 name = "event-cpi-macros"
 version = "0.1.0"
-source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=emit-cpi-gas-service-events#ea57c7733e0955bcbdd6b1bb702a53469603870b"
+source = "git+https://github.com/eigerco/axelar-amplifier-solana?branch=emit-cpi#5deb8972a6af012e2f97711a1917e561d6d74cba"
 dependencies = [
  "anchor-discriminators",
  "event-cpi",
@@ -3172,9 +3172,9 @@ dependencies = [
 
 [[package]]
 name = "flate2"
-version = "1.1.2"
+version = "1.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a3d7db9596fecd151c5f638c0ee5d5bd487b6e0ea232e5dc96d5250f6f94b1d"
+checksum = "dc5a4e564e38c699f2880d3fda590bedc2e69f3f84cd48b457bd892ce61d0aa9"
 dependencies = [
  "crc32fast",
  "miniz_oxide",
@@ -4687,6 +4687,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1fa76a2c86f704bdb222d66965fb3d63269ce38518b83cb0575fca855ebb6316"
 dependencies = [
  "adler2",
+ "simd-adler32",
 ]
 
 [[package]]
@@ -5648,7 +5649,7 @@ dependencies = [
 [[package]]
 name = "program-utils"
 version = "0.1.0"
-source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=emit-cpi-gas-service-events#ea57c7733e0955bcbdd6b1bb702a53469603870b"
+source = "git+https://github.com/eigerco/axelar-amplifier-solana?branch=emit-cpi#5deb8972a6af012e2f97711a1917e561d6d74cba"
 dependencies = [
  "borsh 1.5.7",
  "bytemuck",
@@ -6378,7 +6379,7 @@ dependencies = [
 [[package]]
 name = "role-management"
 version = "0.1.0"
-source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=emit-cpi-gas-service-events#ea57c7733e0955bcbdd6b1bb702a53469603870b"
+source = "git+https://github.com/eigerco/axelar-amplifier-solana?branch=emit-cpi#5deb8972a6af012e2f97711a1917e561d6d74cba"
 dependencies = [
  "bincode",
  "bitflags 2.9.4",
@@ -7264,6 +7265,12 @@ dependencies = [
  "error-stack 0.4.1",
  "thiserror 1.0.69",
 ]
+
+[[package]]
+name = "simd-adler32"
+version = "0.3.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d66dc143e6b11c1eddc06d5c423cfc97062865baf299914ab64caa38182078fe"
 
 [[package]]
 name = "simdutf8"
