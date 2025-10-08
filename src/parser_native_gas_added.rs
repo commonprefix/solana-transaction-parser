@@ -5,16 +5,15 @@ use crate::message_matching_key::MessageMatchingKey;
 use crate::parser::Parser;
 use anchor_lang::AnchorDeserialize;
 use async_trait::async_trait;
-use axelar_solana_gas_service::events::NativeGasAddedEvent;
+use axelar_solana_gas_service::events::GasAddedEvent;
 use relayer_core::gmp_api::gmp_types::{Amount, CommonEventFields, Event, EventMetadata};
 use solana_sdk::pubkey::Pubkey;
-use solana_sdk::signature::Signature;
 use solana_transaction_status::UiCompiledInstruction;
 use tracing::debug;
 
 pub struct ParserNativeGasAdded {
     signature: String,
-    parsed: Option<NativeGasAddedEvent>,
+    parsed: Option<GasAddedEvent>,
     instruction: UiCompiledInstruction,
     expected_contract_address: Pubkey,
     accounts: Vec<String>,
@@ -40,10 +39,10 @@ impl ParserNativeGasAdded {
         instruction: &UiCompiledInstruction,
         expected_contract_address: Pubkey,
         accounts: &[String],
-    ) -> Result<NativeGasAddedEvent, TransactionParsingError> {
+    ) -> Result<GasAddedEvent, TransactionParsingError> {
         let payload =
             check_discriminators_and_address(instruction, expected_contract_address, accounts)?;
-        match NativeGasAddedEvent::deserialize(&mut payload.as_slice()) {
+        match GasAddedEvent::deserialize(&mut payload.as_slice()) {
             Ok(event) => {
                 debug!("Native Gas Added event={:?}", event);
                 Ok(event)
@@ -116,7 +115,7 @@ impl Parser for ParserNativeGasAdded {
             refund_address: parsed.refund_address.to_string(),
             payment: Amount {
                 token_id: None,
-                amount: parsed.gas_fee_amount.to_string(),
+                amount: parsed.amount.to_string(),
             },
         })
     }
@@ -124,12 +123,8 @@ impl Parser for ParserNativeGasAdded {
     async fn message_id(&self) -> Result<Option<String>, TransactionParsingError> {
         if let Some(parsed) = self.parsed.clone() {
             // NOTE: These are emitted by the Programs as 1-indexed to mirror axelarscan and solscan
-            let index = InstructionIndex::new(parsed.ix_index, parsed.event_ix_index);
-            Ok(Some(format!(
-                "{}-{}",
-                Signature::from(parsed.tx_hash),
-                index.serialize()
-            )))
+            let index = InstructionIndex::deserialize(parsed.message_id.to_string())?;
+            Ok(Some(index.serialize()))
         } else {
             Ok(None)
         }
@@ -140,7 +135,6 @@ impl Parser for ParserNativeGasAdded {
 mod tests {
     use std::str::FromStr;
 
-    use solana_sdk::signature::Signature;
     use solana_transaction_status::UiInstruction;
 
     use super::*;
@@ -159,7 +153,7 @@ mod tests {
         let mut parser = ParserNativeGasAdded::new(
             tx.signature.to_string(),
             compiled_ix,
-            Pubkey::from_str("H9XpBVCnYxr7cHd66nqtD8RSTrKY6JC32XVu2zT2kBmP").unwrap(),
+            Pubkey::from_str("CJ9f8WFdm3q38pmg426xQf7uum7RqvrmS9R58usHwNX7").unwrap(),
             tx.account_keys,
         )
         .await
@@ -183,16 +177,11 @@ mod tests {
                                 .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
                         }),
                     },
-                    message_id: format!(
-                        "{}-{}.{}",
-                        Signature::from(parser.parsed.as_ref().unwrap().tx_hash),
-                        parser.parsed.as_ref().unwrap().ix_index,
-                        parser.parsed.as_ref().unwrap().event_ix_index
-                    ),
+                    message_id: { parser.parsed.as_ref().unwrap().message_id.to_string() },
                     refund_address: parser.parsed.as_ref().unwrap().refund_address.to_string(),
                     payment: Amount {
                         token_id: None,
-                        amount: parser.parsed.as_ref().unwrap().gas_fee_amount.to_string(),
+                        amount: parser.parsed.as_ref().unwrap().amount.to_string(),
                     },
                 };
                 assert_eq!(event, expected_event);
@@ -213,7 +202,7 @@ mod tests {
         let mut parser = ParserNativeGasAdded::new(
             tx.signature.to_string(),
             compiled_ix,
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            Pubkey::from_str("CJ9f8WFdm3q38pmg426xQf7uum7RqvrmS9R58usHwNX7").unwrap(),
             tx.account_keys,
         )
         .await

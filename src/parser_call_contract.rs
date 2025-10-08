@@ -152,11 +152,7 @@ impl Parser for ParserCallContract {
     }
 
     async fn message_id(&self) -> Result<Option<String>, TransactionParsingError> {
-        Ok(Some(format!(
-            "{}-{}",
-            self.signature,
-            self.index.serialize()
-        )))
+        Ok(Some(self.index.serialize()))
     }
 }
 
@@ -184,8 +180,8 @@ mod tests {
             compiled_ix,
             tx.account_keys,
             "solana".to_string(),
-            InstructionIndex::new(1, 2),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            InstructionIndex::new(tx.signature.to_string(), 1, 2),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
         )
         .await
         .unwrap();
@@ -278,11 +274,8 @@ mod tests {
             compiled_ix,
             tx.account_keys,
             "solana".to_string(),
-            InstructionIndex {
-                outer_index: 1,
-                inner_index: 2,
-            },
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            InstructionIndex::new(tx.signature.to_string(), 1, 2),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
         )
         .await
         .unwrap();

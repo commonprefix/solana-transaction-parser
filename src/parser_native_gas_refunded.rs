@@ -5,16 +5,15 @@ use crate::message_matching_key::MessageMatchingKey;
 use crate::parser::Parser;
 use anchor_lang::AnchorDeserialize;
 use async_trait::async_trait;
-use axelar_solana_gas_service::events::NativeGasRefundedEvent;
+use axelar_solana_gas_service::events::GasRefundedEvent;
 use relayer_core::gmp_api::gmp_types::{Amount, CommonEventFields, Event, EventMetadata};
 use solana_sdk::pubkey::Pubkey;
-use solana_sdk::signature::Signature;
 use solana_transaction_status::UiCompiledInstruction;
 use tracing::debug;
 
 pub struct ParserNativeGasRefunded {
     signature: String,
-    parsed: Option<NativeGasRefundedEvent>,
+    parsed: Option<GasRefundedEvent>,
     instruction: UiCompiledInstruction,
     expected_contract_address: Pubkey,
     cost_units: u64,
@@ -43,10 +42,10 @@ impl ParserNativeGasRefunded {
         instruction: &UiCompiledInstruction,
         expected_contract_address: Pubkey,
         accounts: &[String],
-    ) -> Result<NativeGasRefundedEvent, TransactionParsingError> {
+    ) -> Result<GasRefundedEvent, TransactionParsingError> {
         let payload =
             check_discriminators_and_address(instruction, expected_contract_address, accounts)?;
-        match NativeGasRefundedEvent::deserialize(&mut payload.as_slice()) {
+        match GasRefundedEvent::deserialize(&mut payload.as_slice()) {
             Ok(event) => {
                 debug!("Native Gas Refunded event={:?}", event);
                 Ok(event)
@@ -123,7 +122,7 @@ impl Parser for ParserNativeGasRefunded {
             recipient_address: parsed.receiver.to_string(),
             refunded_amount: Amount {
                 token_id: None,
-                amount: parsed.fees.to_string(),
+                amount: parsed.amount.to_string(),
             },
             cost: Amount {
                 amount: self.cost_units.to_string(),
@@ -135,12 +134,8 @@ impl Parser for ParserNativeGasRefunded {
     async fn message_id(&self) -> Result<Option<String>, TransactionParsingError> {
         if let Some(parsed) = self.parsed.clone() {
             // NOTE: These are emitted by the Programs as 1-indexed to mirror axelarscan and solscan
-            let index = InstructionIndex::new(parsed.ix_index, parsed.event_ix_index);
-            Ok(Some(format!(
-                "{}-{}",
-                Signature::from(parsed.tx_hash),
-                index.serialize()
-            )))
+            let index = InstructionIndex::deserialize(parsed.message_id.to_string())?;
+            Ok(Some(index.serialize()))
         } else {
             Ok(None)
         }
@@ -151,7 +146,6 @@ impl Parser for ParserNativeGasRefunded {
 mod tests {
     use std::str::FromStr;
 
-    use solana_sdk::signature::Signature;
     use solana_transaction_status::UiInstruction;
 
     use super::*;
@@ -170,7 +164,7 @@ mod tests {
         let mut parser = ParserNativeGasRefunded::new(
             tx.signature.to_string(),
             compiled_ix,
-            Pubkey::from_str("H9XpBVCnYxr7cHd66nqtD8RSTrKY6JC32XVu2zT2kBmP").unwrap(),
+            Pubkey::from_str("CJ9f8WFdm3q38pmg426xQf7uum7RqvrmS9R58usHwNX7").unwrap(),
             tx.cost_units,
             tx.account_keys,
         )
@@ -195,16 +189,18 @@ mod tests {
                                 .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
                         }),
                     },
-                    message_id: format!(
-                        "{}-{}.{}",
-                        Signature::from(parser.parsed.as_ref().unwrap().tx_hash),
-                        parser.parsed.as_ref().unwrap().ix_index,
-                        parser.parsed.as_ref().unwrap().event_ix_index
-                    ),
+                    message_id: {
+                        let index = InstructionIndex::deserialize(
+                            parser.parsed.as_ref().unwrap().message_id.to_string(),
+                        )
+                        .unwrap();
+
+                        index.serialize()
+                    },
                     recipient_address: parser.parsed.as_ref().unwrap().receiver.to_string(),
                     refunded_amount: Amount {
                         token_id: None,
-                        amount: parser.parsed.as_ref().unwrap().fees.to_string(),
+                        amount: parser.parsed.as_ref().unwrap().amount.to_string(),
                     },
                     cost: Amount {
                         amount: tx.cost_units.to_string(),
@@ -229,7 +225,7 @@ mod tests {
         let mut parser = ParserNativeGasRefunded::new(
             tx.signature.to_string(),
             compiled_ix,
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            Pubkey::from_str("CJ9f8WFdm3q38pmg426xQf7uum7RqvrmS9R58usHwNX7").unwrap(),
             tx.cost_units,
             tx.account_keys,
         )

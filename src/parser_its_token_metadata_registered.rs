@@ -145,7 +145,7 @@ mod tests {
         let mut parser = ParserTokenMetadataRegistered::new(
             tx.signature.to_string(),
             compiled_ix,
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
             tx.account_keys,
         )
         .await
@@ -192,7 +192,7 @@ mod tests {
         let mut parser = ParserTokenMetadataRegistered::new(
             tx.signature.to_string(),
             compiled_ix,
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
             tx.account_keys,
         )
         .await
