@@ -170,7 +170,7 @@ mod tests {
             Pubkey::from_str("CJ9f8WFdm3q38pmg426xQf7uum7RqvrmS9R58usHwNX7").unwrap(),
             tx.cost_units,
             tx.account_keys,
-            tx.timestamp.unwrap_or_default().to_string(),
+            tx.timestamp.unwrap_or_default().to_rfc3339(),
         )
         .await
         .unwrap();
@@ -231,7 +231,7 @@ mod tests {
             Pubkey::from_str("CJ9f8WFdm3q38pmg426xQf7uum7RqvrmS9R58usHwNX7").unwrap(),
             tx.cost_units,
             tx.account_keys,
-            tx.timestamp.unwrap_or_default().to_string(),
+            tx.timestamp.unwrap_or_default().to_rfc3339(),
         )
         .await
         .unwrap();

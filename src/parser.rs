@@ -229,7 +229,7 @@ impl TransactionParser {
                                 ci.clone(),
                                 self.gas_service_address,
                                 transaction.account_keys.clone(),
-                                transaction.timestamp.unwrap_or_default().to_string(),
+                                transaction.timestamp.unwrap_or_default().to_rfc3339(),
                             )
                             .await?;
                             if parser.is_match().await? {
@@ -248,7 +248,7 @@ impl TransactionParser {
                                 ci.clone(),
                                 self.gas_service_address,
                                 transaction.account_keys.clone(),
-                                transaction.timestamp.unwrap_or_default().to_string(),
+                                transaction.timestamp.unwrap_or_default().to_rfc3339(),
                             )
                             .await?;
                             if parser.is_match().await? {
@@ -267,7 +267,7 @@ impl TransactionParser {
                                 self.gas_service_address,
                                 transaction.cost_units,
                                 transaction.account_keys.clone(),
-                                transaction.timestamp.unwrap_or_default().to_string(),
+                                transaction.timestamp.unwrap_or_default().to_rfc3339(),
                             )
                             .await?;
                             if parser.is_match().await? {
@@ -287,7 +287,7 @@ impl TransactionParser {
                                 chain_name.clone(),
                                 index,
                                 self.gateway_address,
-                                transaction.timestamp.unwrap_or_default().to_string(),
+                                transaction.timestamp.unwrap_or_default().to_rfc3339(),
                             )
                             .await?;
                             if parser.is_match().await? {
@@ -305,7 +305,7 @@ impl TransactionParser {
                                 ci.clone(),
                                 self.gateway_address,
                                 transaction.account_keys.clone(),
-                                transaction.timestamp.unwrap_or_default().to_string(),
+                                transaction.timestamp.unwrap_or_default().to_rfc3339(),
                             )
                             .await?;
                             if parser.is_match().await? {
@@ -324,7 +324,7 @@ impl TransactionParser {
                                 ci.clone(),
                                 self.gateway_address,
                                 transaction.account_keys.clone(),
-                                transaction.timestamp.unwrap_or_default().to_string(),
+                                transaction.timestamp.unwrap_or_default().to_rfc3339(),
                             )
                             .await?;
                             if parser.is_match().await? {
@@ -344,7 +344,7 @@ impl TransactionParser {
                                 index,
                                 self.gateway_address,
                                 transaction.account_keys.clone(),
-                                transaction.timestamp.unwrap_or_default().to_string(),
+                                transaction.timestamp.unwrap_or_default().to_rfc3339(),
                             )
                             .await?;
                             if parser.is_match().await? {
@@ -362,7 +362,7 @@ impl TransactionParser {
                                 ci.clone(),
                                 self.its_address,
                                 transaction.account_keys.clone(),
-                                transaction.timestamp.unwrap_or_default().to_string(),
+                                transaction.timestamp.unwrap_or_default().to_rfc3339(),
                             )
                             .await?;
                             if parser.is_match().await? {
@@ -380,7 +380,7 @@ impl TransactionParser {
                                 ci.clone(),
                                 self.its_address,
                                 transaction.account_keys.clone(),
-                                transaction.timestamp.unwrap_or_default().to_string(),
+                                transaction.timestamp.unwrap_or_default().to_rfc3339(),
                             )
                             .await?;
                             if parser.is_match().await? {
@@ -398,7 +398,7 @@ impl TransactionParser {
                                 ci.clone(),
                                 self.its_address,
                                 transaction.account_keys.clone(),
-                                transaction.timestamp.unwrap_or_default().to_string(),
+                                transaction.timestamp.unwrap_or_default().to_rfc3339(),
                             )
                             .await?;
                             if parser.is_match().await? {
@@ -416,7 +416,7 @@ impl TransactionParser {
                                 ci.clone(),
                                 self.its_address,
                                 transaction.account_keys.clone(),
-                                transaction.timestamp.unwrap_or_default().to_string(),
+                                transaction.timestamp.unwrap_or_default().to_rfc3339(),
                             )
                             .await?;
                             if parser.is_match().await? {

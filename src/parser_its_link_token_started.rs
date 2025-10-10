@@ -174,7 +174,7 @@ mod tests {
             compiled_ix,
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
             tx.account_keys,
-            tx.timestamp.unwrap_or_default().to_string(),
+            tx.timestamp.unwrap_or_default().to_rfc3339(),
         )
         .await
         .unwrap();
@@ -241,7 +241,7 @@ mod tests {
             compiled_ix,
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
             tx.account_keys,
-            tx.timestamp.unwrap_or_default().to_string(),
+            tx.timestamp.unwrap_or_default().to_rfc3339(),
         )
         .await
         .unwrap();
