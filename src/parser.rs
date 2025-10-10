@@ -197,12 +197,11 @@ impl TransactionParser {
 
                     let index = InstructionIndex::new(
                         transaction.signature.to_string(),
-                        group
-                            .index
-                            .checked_add(1)
-                            .ok_or(TransactionParsingError::IndexOverflow(
+                        group.index.checked_add(1).ok_or(
+                            TransactionParsingError::IndexOverflow(
                                 "Outer index overflow".to_string(),
-                            ))? as u8,
+                            ),
+                        )?,
                         inner_index
                             .checked_add(1)
                             .ok_or(TransactionParsingError::IndexOverflow(
@@ -498,7 +497,7 @@ mod tests {
                 destination_chain,
                 ..
             } => {
-                assert_eq!(destination_chain, "ethereum");
+                assert_eq!(destination_chain, "solana-5");
                 assert_eq!(message.message_id, format!("{}-2.1", sig));
             }
             _ => panic!("Expected CallContract event"),
