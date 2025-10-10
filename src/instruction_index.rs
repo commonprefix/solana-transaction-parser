@@ -119,11 +119,11 @@ mod tests {
         }
     }
 
-    // #[test]
-    // fn sad_path_missing_dash() {
-    //     let err = InstructionIndex::deserialize("InvalidNoDashHere".to_string()).unwrap_err();
-    //     assert!(is_msg(&err, "Invalid format"), "{err:?}");
-    // }
+    #[test]
+    fn sad_path_missing_dash() {
+        let err = InstructionIndex::deserialize("InvalidNoDashHere".to_string()).unwrap_err();
+        assert!(is_msg(&err, "Invalid indices"), "{err:?}");
+    }
 
     #[test]
     fn sad_path_missing_dot() {
