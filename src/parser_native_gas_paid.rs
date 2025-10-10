@@ -3,19 +3,21 @@ use crate::error::TransactionParsingError;
 use crate::message_matching_key::MessageMatchingKey;
 use crate::parser::Parser;
 use async_trait::async_trait;
-use axelar_solana_gas_service::events::NativeGasPaidForContractCallEvent;
+use axelar_solana_gas_service::events::GasPaidEvent;
 use borsh::BorshDeserialize;
 use relayer_core::gmp_api::gmp_types::{Amount, CommonEventFields, Event, EventMetadata};
 use solana_sdk::pubkey::Pubkey;
 use solana_transaction_status::UiCompiledInstruction;
 use tracing::debug;
+use uuid::Uuid;
 
 pub struct ParserNativeGasPaid {
     signature: String,
-    parsed: Option<NativeGasPaidForContractCallEvent>,
+    parsed: Option<GasPaidEvent>,
     instruction: UiCompiledInstruction,
     expected_contract_address: Pubkey,
     accounts: Vec<String>,
+    timestamp: String,
 }
 
 impl ParserNativeGasPaid {
@@ -24,6 +26,7 @@ impl ParserNativeGasPaid {
         instruction: UiCompiledInstruction,
         expected_contract_address: Pubkey,
         accounts: Vec<String>,
+        timestamp: String,
     ) -> Result<Self, TransactionParsingError> {
         Ok(Self {
             signature,
@@ -31,6 +34,7 @@ impl ParserNativeGasPaid {
             instruction,
             expected_contract_address,
             accounts,
+            timestamp,
         })
     }
 
@@ -38,10 +42,10 @@ impl ParserNativeGasPaid {
         instruction: &UiCompiledInstruction,
         expected_contract_address: Pubkey,
         accounts: &[String],
-    ) -> Result<NativeGasPaidForContractCallEvent, TransactionParsingError> {
+    ) -> Result<GasPaidEvent, TransactionParsingError> {
         let payload =
             check_discriminators_and_address(instruction, expected_contract_address, accounts)?;
-        match NativeGasPaidForContractCallEvent::try_from_slice(&payload) {
+        match GasPaidEvent::try_from_slice(&payload) {
             Ok(event) => {
                 debug!("Native Gas Paid for Contract Call event={:?}", event);
                 Ok(event)
@@ -105,21 +109,20 @@ impl Parser for ParserNativeGasPaid {
         Ok(Event::GasCredit {
             common: CommonEventFields {
                 r#type: "GAS_CREDIT".to_owned(),
-                event_id: format!("{}-gas", self.signature),
+                event_id: format!("{}-gas", Uuid::new_v4()),
                 meta: Some(EventMetadata {
                     tx_id: Some(self.signature.to_string()),
                     from_address: None,
                     finalized: None,
                     source_context: None,
-                    timestamp: chrono::Utc::now()
-                        .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                    timestamp: self.timestamp.clone(),
                 }),
             },
             message_id,
             refund_address: parsed.refund_address.to_string(),
             payment: Amount {
                 token_id: None,
-                amount: parsed.gas_fee_amount.to_string(),
+                amount: parsed.amount.to_string(),
             },
         })
     }
@@ -151,8 +154,9 @@ mod tests {
         let mut parser = ParserNativeGasPaid::new(
             tx.signature.to_string(),
             compiled_ix,
-            Pubkey::from_str("H9XpBVCnYxr7cHd66nqtD8RSTrKY6JC32XVu2zT2kBmP").unwrap(),
+            Pubkey::from_str("CJ9f8WFdm3q38pmg426xQf7uum7RqvrmS9R58usHwNX7").unwrap(),
             tx.account_keys,
+            tx.timestamp.unwrap_or_default().to_rfc3339(),
         )
         .await
         .unwrap();
@@ -161,25 +165,24 @@ mod tests {
         parser.parse().await.unwrap();
         let event = parser.event(Some(format!("{}-1", sig))).await.unwrap();
         match event {
-            Event::GasCredit { .. } => {
-                let expected_event = Event::GasCredit {
+            Event::GasCredit { ref common, .. } => {
+                let expected_event: Event = Event::GasCredit {
                     common: CommonEventFields {
                         r#type: "GAS_CREDIT".to_owned(),
-                        event_id: format!("{}-gas", sig),
+                        event_id: common.event_id.clone(),
                         meta: Some(EventMetadata {
                             tx_id: Some(sig.to_string()),
                             from_address: None,
                             finalized: None,
                             source_context: None,
-                            timestamp: chrono::Utc::now()
-                                .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                            timestamp: parser.timestamp.clone(),
                         }),
                     },
                     message_id: format!("{}-1", sig),
                     refund_address: parser.parsed.as_ref().unwrap().refund_address.to_string(),
                     payment: Amount {
                         token_id: None,
-                        amount: parser.parsed.as_ref().unwrap().gas_fee_amount.to_string(),
+                        amount: parser.parsed.as_ref().unwrap().amount.to_string(),
                     },
                 };
                 assert_eq!(event, expected_event);
@@ -200,8 +203,9 @@ mod tests {
         let mut parser = ParserNativeGasPaid::new(
             tx.signature.to_string(),
             compiled_ix,
-            Pubkey::from_str("H9XpBVCnYxr7cHd66nqtD8RSTrKY6JC32XVu2zT2kBmP").unwrap(),
+            Pubkey::from_str("CJ9f8WFdm3q38pmg426xQf7uum7RqvrmS9R58usHwNX7").unwrap(),
             tx.account_keys,
+            tx.timestamp.unwrap_or_default().to_rfc3339(),
         )
         .await
         .unwrap();

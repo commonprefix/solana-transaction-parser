@@ -5,6 +5,8 @@ use crate::message_matching_key::MessageMatchingKey;
 use crate::parser::Parser;
 use async_trait::async_trait;
 use axelar_solana_gateway::events::VerifierSetRotatedEvent;
+use base64::prelude::BASE64_STANDARD;
+use base64::Engine as _;
 use borsh::BorshDeserialize;
 use relayer_core::gmp_api::gmp_types::{
     CommonEventFields, Event, EventMetadata, SignersRotatedEventMetadata,
@@ -12,6 +14,7 @@ use relayer_core::gmp_api::gmp_types::{
 use solana_sdk::pubkey::Pubkey;
 use solana_transaction_status::UiCompiledInstruction;
 use tracing::debug;
+use uuid::Uuid;
 
 pub struct ParserSignersRotated {
     signature: String,
@@ -20,6 +23,7 @@ pub struct ParserSignersRotated {
     expected_contract_address: Pubkey,
     index: InstructionIndex,
     accounts: Vec<String>,
+    timestamp: String,
 }
 
 impl ParserSignersRotated {
@@ -29,6 +33,7 @@ impl ParserSignersRotated {
         index: InstructionIndex,
         expected_contract_address: Pubkey,
         accounts: Vec<String>,
+        timestamp: String,
     ) -> Result<Self, TransactionParsingError> {
         Ok(Self {
             signature,
@@ -37,6 +42,7 @@ impl ParserSignersRotated {
             expected_contract_address,
             index,
             accounts,
+            timestamp,
         })
     }
 
@@ -98,6 +104,11 @@ impl Parser for ParserSignersRotated {
             .clone()
             .ok_or_else(|| TransactionParsingError::Message("Missing parsed".to_string()))?;
 
+        let message_id = self
+            .message_id()
+            .await?
+            .ok_or_else(|| TransactionParsingError::Message("Missing message_id".to_string()))?;
+
         let epoch = {
             let le = parsed.epoch.to_le_bytes();
             let first8 = le.get(..8).ok_or_else(|| {
@@ -112,30 +123,25 @@ impl Parser for ParserSignersRotated {
         Ok(Event::SignersRotated {
             common: CommonEventFields {
                 r#type: "SIGNERS_ROTATED".to_owned(),
-                event_id: format!("{}-signers-rotated", self.signature.clone()),
+                event_id: format!("{}-signers-rotated", Uuid::new_v4()),
                 meta: Some(SignersRotatedEventMetadata {
                     common_meta: EventMetadata {
                         tx_id: Some(self.signature.clone()),
                         from_address: None,
                         finalized: None,
                         source_context: None,
-                        timestamp: chrono::Utc::now()
-                            .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                        timestamp: self.timestamp.clone(),
                     },
-                    signers_hash: Some(hex::encode(parsed.verifier_set_hash)),
+                    signers_hash: Some(BASE64_STANDARD.encode(parsed.verifier_set_hash)),
                     epoch: Some(epoch),
                 }),
             },
-            message_id: format!("{}-{}", self.signature, self.index.serialize()),
+            message_id,
         })
     }
 
     async fn message_id(&self) -> Result<Option<String>, TransactionParsingError> {
-        Ok(Some(format!(
-            "{}-{}",
-            self.signature,
-            self.index.serialize()
-        )))
+        Ok(Some(self.index.serialize()))
     }
 }
 
@@ -143,6 +149,8 @@ impl Parser for ParserSignersRotated {
 mod tests {
     use std::str::FromStr;
 
+    use base64::prelude::BASE64_STANDARD;
+    use base64::Engine as _;
     use solana_transaction_status::UiInstruction;
 
     use super::*;
@@ -161,9 +169,10 @@ mod tests {
         let mut parser = ParserSignersRotated::new(
             tx.signature.to_string(),
             compiled_ix,
-            InstructionIndex::new(1, 2),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            InstructionIndex::new(tx.signature.to_string(), 1, 2),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
             tx.account_keys,
+            tx.timestamp.unwrap_or_default().to_rfc3339(),
         )
         .await
         .unwrap();
@@ -172,23 +181,23 @@ mod tests {
         parser.parse().await.unwrap();
         let event = parser.event(None).await.unwrap();
         match event {
-            Event::SignersRotated { .. } => {
+            Event::SignersRotated { ref common, .. } => {
                 let expected_event = Event::SignersRotated {
                     common: CommonEventFields {
                         r#type: "SIGNERS_ROTATED".to_owned(),
-                        event_id: format!("{}-signers-rotated", sig),
+                        event_id: common.event_id.clone(),
                         meta: Some(SignersRotatedEventMetadata {
                             common_meta: EventMetadata {
                                 tx_id: Some(sig.to_string()),
                                 from_address: None,
                                 finalized: None,
                                 source_context: None,
-                                timestamp: chrono::Utc::now()
-                                    .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                                timestamp: parser.timestamp.clone(),
                             },
-                            signers_hash: Some(hex::encode(
-                                parser.parsed.as_ref().unwrap().verifier_set_hash,
-                            )),
+                            signers_hash: Some(
+                                BASE64_STANDARD
+                                    .encode(parser.parsed.as_ref().unwrap().verifier_set_hash),
+                            ),
                             epoch: Some(u64::from_le_bytes(
                                 parser.parsed.as_ref().unwrap().epoch.to_le_bytes()[..8]
                                     .try_into()
@@ -219,9 +228,10 @@ mod tests {
         let mut parser = ParserSignersRotated::new(
             tx.signature.to_string(),
             compiled_ix,
-            InstructionIndex::new(1, 2),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            InstructionIndex::new(tx.signature.to_string(), 1, 2),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
             tx.account_keys,
+            tx.timestamp.unwrap_or_default().to_rfc3339(),
         )
         .await
         .unwrap();

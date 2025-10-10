@@ -5,11 +5,14 @@ use crate::error::TransactionParsingError;
 use crate::message_matching_key::MessageMatchingKey;
 use crate::parser::Parser;
 use async_trait::async_trait;
+use base64::prelude::BASE64_STANDARD;
+use base64::Engine as _;
 use borsh::BorshDeserialize;
 use relayer_core::gmp_api::gmp_types::{Amount, CommonEventFields, Event, EventMetadata};
 use solana_sdk::pubkey::Pubkey;
 use solana_transaction_status::UiCompiledInstruction;
 use tracing::debug;
+use uuid::Uuid;
 
 #[derive(BorshDeserialize, Clone, Debug)]
 pub struct InterchainTransfer {
@@ -28,6 +31,7 @@ pub struct ParserInterchainTransfer {
     instruction: UiCompiledInstruction,
     expected_contract_address: Pubkey,
     accounts: Vec<String>,
+    timestamp: String,
 }
 
 impl ParserInterchainTransfer {
@@ -36,6 +40,7 @@ impl ParserInterchainTransfer {
         instruction: UiCompiledInstruction,
         expected_contract_address: Pubkey,
         accounts: Vec<String>,
+        timestamp: String,
     ) -> Result<Self, TransactionParsingError> {
         Ok(Self {
             signature,
@@ -43,6 +48,7 @@ impl ParserInterchainTransfer {
             instruction,
             expected_contract_address,
             accounts,
+            timestamp,
         })
     }
 
@@ -107,7 +113,7 @@ impl Parser for ParserInterchainTransfer {
         Ok(Event::ITSInterchainTransfer {
             common: CommonEventFields {
                 r#type: "ITS/INTERCHAIN_TRANSFER".to_owned(),
-                event_id: format!("{}-its-interchain-transfer", self.signature.clone()),
+                event_id: format!("{}-its-interchain-transfer", Uuid::new_v4()),
                 meta: Some(EventMetadata {
                     tx_id: Some(self.signature.clone()),
                     from_address: None,
@@ -116,14 +122,13 @@ impl Parser for ParserInterchainTransfer {
                         "source_token_account".to_owned(),
                         parsed.source_token_account.to_string(),
                     )])),
-                    timestamp: chrono::Utc::now()
-                        .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                    timestamp: self.timestamp.clone(),
                 }),
             },
             source_address: parsed.source_address.to_string(),
             destination_chain: parsed.destination_chain.clone(),
-            destination_address: hex::encode(parsed.destination_address),
-            data_hash: hex::encode(parsed.data_hash),
+            destination_address: BASE64_STANDARD.encode(parsed.destination_address),
+            data_hash: BASE64_STANDARD.encode(parsed.data_hash),
             message_id: message_id.ok_or_else(|| {
                 TransactionParsingError::Message("Missing message_id".to_string())
             })?,
@@ -161,8 +166,9 @@ mod tests {
         let mut parser = ParserInterchainTransfer::new(
             tx.signature.to_string(),
             compiled_ix,
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
             tx.account_keys,
+            tx.timestamp.unwrap_or_default().to_rfc3339(),
         )
         .await
         .unwrap();
@@ -171,11 +177,11 @@ mod tests {
         parser.parse().await.unwrap();
         let event = parser.event(Some(format!("{}-1", sig))).await.unwrap();
         match event {
-            Event::ITSInterchainTransfer { .. } => {
+            Event::ITSInterchainTransfer { ref common, .. } => {
                 let expected_event = Event::ITSInterchainTransfer {
                     common: CommonEventFields {
                         r#type: "ITS/INTERCHAIN_TRANSFER".to_owned(),
-                        event_id: format!("{}-its-interchain-transfer", sig),
+                        event_id: common.event_id.clone(),
                         meta: Some(EventMetadata {
                             tx_id: Some(sig.to_string()),
                             from_address: None,
@@ -189,16 +195,14 @@ mod tests {
                                     .source_token_account
                                     .to_string(),
                             )])),
-                            timestamp: chrono::Utc::now()
-                                .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                            timestamp: parser.timestamp.clone(),
                         }),
                     },
                     source_address: parser.parsed.as_ref().unwrap().source_address.to_string(),
                     destination_chain: parser.parsed.as_ref().unwrap().destination_chain.clone(),
-                    destination_address: hex::encode(
-                        parser.parsed.as_ref().unwrap().destination_address.clone(),
-                    ),
-                    data_hash: hex::encode(parser.parsed.as_ref().unwrap().data_hash),
+                    destination_address: BASE64_STANDARD
+                        .encode(parser.parsed.as_ref().unwrap().destination_address.clone()),
+                    data_hash: BASE64_STANDARD.encode(parser.parsed.as_ref().unwrap().data_hash),
                     message_id: format!("{}-1", sig),
                     token_spent: Amount {
                         token_id: Some(hex::encode(parser.parsed.as_ref().unwrap().token_id)),
@@ -224,8 +228,9 @@ mod tests {
         let mut parser = ParserInterchainTransfer::new(
             tx.signature.to_string(),
             compiled_ix,
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
             tx.account_keys,
+            tx.timestamp.unwrap_or_default().to_rfc3339(),
         )
         .await
         .unwrap();

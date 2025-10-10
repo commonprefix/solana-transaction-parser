@@ -521,7 +521,7 @@ dependencies = [
 [[package]]
 name = "anchor-discriminators"
 version = "0.1.0"
-source = "git+https://github.com/eigerco/axelar-amplifier-solana?branch=emit-cpi#5deb8972a6af012e2f97711a1917e561d6d74cba"
+source = "git+https://github.com/eigerco/axelar-amplifier-solana?branch=emit-cpi#9e1d18c94ab01c57d3858e698d17a3f001a65aa5"
 dependencies = [
  "borsh 1.5.7",
  "bs58",
@@ -533,7 +533,7 @@ dependencies = [
 [[package]]
 name = "anchor-discriminators-macros"
 version = "0.1.0"
-source = "git+https://github.com/eigerco/axelar-amplifier-solana?branch=emit-cpi#5deb8972a6af012e2f97711a1917e561d6d74cba"
+source = "git+https://github.com/eigerco/axelar-amplifier-solana?branch=emit-cpi#9e1d18c94ab01c57d3858e698d17a3f001a65aa5"
 dependencies = [
  "anchor-discriminators",
  "borsh 1.5.7",
@@ -1253,7 +1253,7 @@ dependencies = [
 [[package]]
 name = "axelar-message-primitives"
 version = "0.1.0"
-source = "git+https://github.com/eigerco/axelar-amplifier-solana?branch=emit-cpi#5deb8972a6af012e2f97711a1917e561d6d74cba"
+source = "git+https://github.com/eigerco/axelar-amplifier-solana?branch=emit-cpi#9e1d18c94ab01c57d3858e698d17a3f001a65aa5"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
@@ -1267,7 +1267,7 @@ dependencies = [
 [[package]]
 name = "axelar-solana-encoding"
 version = "0.1.0"
-source = "git+https://github.com/eigerco/axelar-amplifier-solana?branch=emit-cpi#5deb8972a6af012e2f97711a1917e561d6d74cba"
+source = "git+https://github.com/eigerco/axelar-amplifier-solana?branch=emit-cpi#9e1d18c94ab01c57d3858e698d17a3f001a65aa5"
 dependencies = [
  "arrayref",
  "borsh 1.5.7",
@@ -1283,7 +1283,7 @@ dependencies = [
 [[package]]
 name = "axelar-solana-gas-service"
 version = "0.1.0"
-source = "git+https://github.com/eigerco/axelar-amplifier-solana?branch=emit-cpi#5deb8972a6af012e2f97711a1917e561d6d74cba"
+source = "git+https://github.com/eigerco/axelar-amplifier-solana?branch=emit-cpi#9e1d18c94ab01c57d3858e698d17a3f001a65aa5"
 dependencies = [
  "anchor-discriminators",
  "anchor-discriminators-macros",
@@ -1293,15 +1293,12 @@ dependencies = [
  "event-cpi-macros",
  "program-utils",
  "solana-program",
- "spl-associated-token-account 6.0.0",
- "spl-token 6.0.0",
- "spl-token-2022 6.0.0",
 ]
 
 [[package]]
 name = "axelar-solana-gateway"
 version = "0.1.0"
-source = "git+https://github.com/eigerco/axelar-amplifier-solana?branch=emit-cpi#5deb8972a6af012e2f97711a1917e561d6d74cba"
+source = "git+https://github.com/eigerco/axelar-amplifier-solana?branch=emit-cpi#9e1d18c94ab01c57d3858e698d17a3f001a65aa5"
 dependencies = [
  "alloy-sol-types",
  "anchor-discriminators",
@@ -2925,7 +2922,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.1",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -2981,16 +2978,17 @@ dependencies = [
 [[package]]
 name = "event-cpi"
 version = "0.1.0"
-source = "git+https://github.com/eigerco/axelar-amplifier-solana?branch=emit-cpi#5deb8972a6af012e2f97711a1917e561d6d74cba"
+source = "git+https://github.com/eigerco/axelar-amplifier-solana?branch=emit-cpi#9e1d18c94ab01c57d3858e698d17a3f001a65aa5"
 dependencies = [
  "anchor-discriminators",
  "borsh 1.5.7",
+ "solana-program",
 ]
 
 [[package]]
 name = "event-cpi-macros"
 version = "0.1.0"
-source = "git+https://github.com/eigerco/axelar-amplifier-solana?branch=emit-cpi#5deb8972a6af012e2f97711a1917e561d6d74cba"
+source = "git+https://github.com/eigerco/axelar-amplifier-solana?branch=emit-cpi#9e1d18c94ab01c57d3858e698d17a3f001a65aa5"
 dependencies = [
  "anchor-discriminators",
  "event-cpi",
@@ -3549,12 +3547,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hashbrown"
-version = "0.16.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5419bdc4f6a9207fbeba6d11b604d481addf78ecd10c11ad51e76c2f6482748d"
-
-[[package]]
 name = "hashlink"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4084,7 +4076,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4b0f83760fb341a774ed326568e19f5a863af4a952def8c39f9ab92fd95b88e5"
 dependencies = [
  "equivalent",
- "hashbrown 0.16.0",
+ "hashbrown 0.15.5",
  "serde",
  "serde_core",
 ]
@@ -5649,7 +5641,7 @@ dependencies = [
 [[package]]
 name = "program-utils"
 version = "0.1.0"
-source = "git+https://github.com/eigerco/axelar-amplifier-solana?branch=emit-cpi#5deb8972a6af012e2f97711a1917e561d6d74cba"
+source = "git+https://github.com/eigerco/axelar-amplifier-solana?branch=emit-cpi#9e1d18c94ab01c57d3858e698d17a3f001a65aa5"
 dependencies = [
  "borsh 1.5.7",
  "bytemuck",
@@ -6379,7 +6371,7 @@ dependencies = [
 [[package]]
 name = "role-management"
 version = "0.1.0"
-source = "git+https://github.com/eigerco/axelar-amplifier-solana?branch=emit-cpi#5deb8972a6af012e2f97711a1917e561d6d74cba"
+source = "git+https://github.com/eigerco/axelar-amplifier-solana?branch=emit-cpi#9e1d18c94ab01c57d3858e698d17a3f001a65aa5"
 dependencies = [
  "bincode",
  "bitflags 2.9.4",
@@ -6553,7 +6545,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.11.0",
- "windows-sys 0.61.1",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -8163,6 +8155,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-test",
+ "uuid",
 ]
 
 [[package]]
@@ -9294,7 +9287,7 @@ dependencies = [
  "getrandom 0.3.3",
  "once_cell",
  "rustix 1.1.2",
- "windows-sys 0.61.1",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]

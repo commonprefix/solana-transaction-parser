@@ -36,24 +36,6 @@ pub fn check_discriminators_and_address(
         ));
     }
 
-    // if bytes.get(0..8) != Some(&config.event_cpi_discriminator) {
-    //     debug!(
-    //         "expected event cpi discriminator, got {:?}",
-    //         bytes.get(0..8)
-    //     );
-    //     return Err(TransactionParsingError::InvalidInstructionData(
-    //         "expected event cpi discriminator".to_string(),
-    //     ));
-    // }
-    // if bytes.get(8..16) != Some(&config.event_type_discriminator) {
-    //     debug!(
-    //         "expected event type discriminator, got {:?}",
-    //         bytes.get(8..16)
-    //     );
-    //     return Err(TransactionParsingError::InvalidInstructionData(
-    //         "expected event type discriminator".to_string(),
-    //     ));
-    // }
     Ok(bytes
         .get(16..)
         .ok_or_else(|| {

@@ -19,6 +19,7 @@ serde_json = "1.0.133"
 dotenv = "0.15.0"
 thiserror = "2.0.3"
 async-trait = "0.1.88"
+uuid = { version = "1.17.0", features = ["v4"] }
 base64 = "0.22.1"
 solana-sdk = "~2.1"
 solana-transaction-status = "~2.1"

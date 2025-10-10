@@ -19,9 +19,7 @@ use crate::parser_native_gas_refunded::ParserNativeGasRefunded;
 use crate::parser_signers_rotated::ParserSignersRotated;
 use crate::types::SolanaTransaction;
 use async_trait::async_trait;
-use axelar_solana_gas_service::events::{
-    NativeGasAddedEvent, NativeGasPaidForContractCallEvent, NativeGasRefundedEvent,
-};
+use axelar_solana_gas_service::events::{GasAddedEvent, GasPaidEvent, GasRefundedEvent};
 use axelar_solana_gateway::events::{
     CallContractEvent, MessageApprovedEvent, MessageExecutedEvent, VerifierSetRotatedEvent,
 };
@@ -198,6 +196,7 @@ impl TransactionParser {
                     }
 
                     let index = InstructionIndex::new(
+                        transaction.signature.to_string(),
                         group
                             .index
                             .checked_add(1)
@@ -223,12 +222,13 @@ impl TransactionParser {
                     };
 
                     match event_type_discriminator {
-                        x if x == NativeGasPaidForContractCallEvent::DISCRIMINATOR => {
+                        x if x == GasPaidEvent::DISCRIMINATOR => {
                             let mut parser = ParserNativeGasPaid::new(
                                 transaction.signature.to_string(),
                                 ci.clone(),
                                 self.gas_service_address,
                                 transaction.account_keys.clone(),
+                                transaction.timestamp.unwrap_or_default().to_rfc3339(),
                             )
                             .await?;
                             if parser.is_match().await? {
@@ -241,12 +241,13 @@ impl TransactionParser {
                                 gas_credit_map.insert(key, Box::new(parser));
                             }
                         }
-                        x if x == NativeGasAddedEvent::DISCRIMINATOR => {
+                        x if x == GasAddedEvent::DISCRIMINATOR => {
                             let mut parser = ParserNativeGasAdded::new(
                                 transaction.signature.to_string(),
                                 ci.clone(),
                                 self.gas_service_address,
                                 transaction.account_keys.clone(),
+                                transaction.timestamp.unwrap_or_default().to_rfc3339(),
                             )
                             .await?;
                             if parser.is_match().await? {
@@ -258,13 +259,14 @@ impl TransactionParser {
                                 parsers.push(Box::new(parser));
                             }
                         }
-                        x if x == NativeGasRefundedEvent::DISCRIMINATOR => {
+                        x if x == GasRefundedEvent::DISCRIMINATOR => {
                             let mut parser = ParserNativeGasRefunded::new(
                                 transaction.signature.to_string(),
                                 ci.clone(),
                                 self.gas_service_address,
                                 transaction.cost_units,
                                 transaction.account_keys.clone(),
+                                transaction.timestamp.unwrap_or_default().to_rfc3339(),
                             )
                             .await?;
                             if parser.is_match().await? {
@@ -284,6 +286,7 @@ impl TransactionParser {
                                 chain_name.clone(),
                                 index,
                                 self.gateway_address,
+                                transaction.timestamp.unwrap_or_default().to_rfc3339(),
                             )
                             .await?;
                             if parser.is_match().await? {
@@ -301,6 +304,7 @@ impl TransactionParser {
                                 ci.clone(),
                                 self.gateway_address,
                                 transaction.account_keys.clone(),
+                                transaction.timestamp.unwrap_or_default().to_rfc3339(),
                             )
                             .await?;
                             if parser.is_match().await? {
@@ -319,6 +323,7 @@ impl TransactionParser {
                                 ci.clone(),
                                 self.gateway_address,
                                 transaction.account_keys.clone(),
+                                transaction.timestamp.unwrap_or_default().to_rfc3339(),
                             )
                             .await?;
                             if parser.is_match().await? {
@@ -338,6 +343,7 @@ impl TransactionParser {
                                 index,
                                 self.gateway_address,
                                 transaction.account_keys.clone(),
+                                transaction.timestamp.unwrap_or_default().to_rfc3339(),
                             )
                             .await?;
                             if parser.is_match().await? {
@@ -355,6 +361,7 @@ impl TransactionParser {
                                 ci.clone(),
                                 self.its_address,
                                 transaction.account_keys.clone(),
+                                transaction.timestamp.unwrap_or_default().to_rfc3339(),
                             )
                             .await?;
                             if parser.is_match().await? {
@@ -372,6 +379,7 @@ impl TransactionParser {
                                 ci.clone(),
                                 self.its_address,
                                 transaction.account_keys.clone(),
+                                transaction.timestamp.unwrap_or_default().to_rfc3339(),
                             )
                             .await?;
                             if parser.is_match().await? {
@@ -389,6 +397,7 @@ impl TransactionParser {
                                 ci.clone(),
                                 self.its_address,
                                 transaction.account_keys.clone(),
+                                transaction.timestamp.unwrap_or_default().to_rfc3339(),
                             )
                             .await?;
                             if parser.is_match().await? {
@@ -406,6 +415,7 @@ impl TransactionParser {
                                 ci.clone(),
                                 self.its_address,
                                 transaction.account_keys.clone(),
+                                transaction.timestamp.unwrap_or_default().to_rfc3339(),
                             )
                             .await?;
                             if parser.is_match().await? {
@@ -470,9 +480,9 @@ mod tests {
         let txs = transaction_fixtures();
         let parser = TransactionParser::new(
             "solana".to_string(),
-            Pubkey::from_str("H9XpBVCnYxr7cHd66nqtD8RSTrKY6JC32XVu2zT2kBmP").unwrap(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            Pubkey::from_str("CJ9f8WFdm3q38pmg426xQf7uum7RqvrmS9R58usHwNX7").unwrap(),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
         );
         let events = parser
             .parse_transaction(serde_json::to_string(&txs[0]).unwrap())
@@ -512,9 +522,9 @@ mod tests {
         let txs = transaction_fixtures();
         let parser = TransactionParser::new(
             "solana".to_string(),
-            Pubkey::from_str("H9XpBVCnYxr7cHd66nqtD8RSTrKY6JC32XVu2zT2kBmP").unwrap(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            Pubkey::from_str("CJ9f8WFdm3q38pmg426xQf7uum7RqvrmS9R58usHwNX7").unwrap(),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
         );
         let events = parser
             .parse_transaction(serde_json::to_string(&txs[3]).unwrap())
@@ -537,9 +547,9 @@ mod tests {
         let txs = transaction_fixtures();
         let parser = TransactionParser::new(
             "solana".to_string(),
-            Pubkey::from_str("H9XpBVCnYxr7cHd66nqtD8RSTrKY6JC32XVu2zT2kBmP").unwrap(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            Pubkey::from_str("CJ9f8WFdm3q38pmg426xQf7uum7RqvrmS9R58usHwNX7").unwrap(),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
         );
         let events = parser
             .parse_transaction(serde_json::to_string(&txs[6]).unwrap())
@@ -569,9 +579,9 @@ mod tests {
         let txs = transaction_fixtures();
         let parser = TransactionParser::new(
             "solana".to_string(),
-            Pubkey::from_str("H9XpBVCnYxr7cHd66nqtD8RSTrKY6JC32XVu2zT2kBmP").unwrap(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            Pubkey::from_str("CJ9f8WFdm3q38pmg426xQf7uum7RqvrmS9R58usHwNX7").unwrap(),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
         );
         let events = parser
             .parse_transaction(serde_json::to_string(&txs[1]).unwrap())
@@ -593,9 +603,9 @@ mod tests {
         let txs = transaction_fixtures();
         let parser = TransactionParser::new(
             "solana".to_string(),
-            Pubkey::from_str("H9XpBVCnYxr7cHd66nqtD8RSTrKY6JC32XVu2zT2kBmP").unwrap(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            Pubkey::from_str("CJ9f8WFdm3q38pmg426xQf7uum7RqvrmS9R58usHwNX7").unwrap(),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
         );
         let events = parser
             .parse_transaction(serde_json::to_string(&txs[5]).unwrap())
@@ -625,9 +635,9 @@ mod tests {
         let txs = transaction_fixtures();
         let parser = TransactionParser::new(
             "solana".to_string(),
-            Pubkey::from_str("H9XpBVCnYxr7cHd66nqtD8RSTrKY6JC32XVu2zT2kBmP").unwrap(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            Pubkey::from_str("CJ9f8WFdm3q38pmg426xQf7uum7RqvrmS9R58usHwNX7").unwrap(),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
         );
         let events = parser
             .parse_transaction(serde_json::to_string(&txs[2]).unwrap())
@@ -649,9 +659,9 @@ mod tests {
         let txs = transaction_fixtures();
         let parser = TransactionParser::new(
             "solana".to_string(),
-            Pubkey::from_str("H9XpBVCnYxr7cHd66nqtD8RSTrKY6JC32XVu2zT2kBmP").unwrap(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            Pubkey::from_str("CJ9f8WFdm3q38pmg426xQf7uum7RqvrmS9R58usHwNX7").unwrap(),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
         );
         let events = parser
             .parse_transaction(serde_json::to_string(&txs[4]).unwrap())
@@ -670,9 +680,9 @@ mod tests {
         let txs = transaction_fixtures();
         let parser = TransactionParser::new(
             "solana".to_string(),
-            Pubkey::from_str("H9XpBVCnYxr7cHd66nqtD8RSTrKY6JC32XVu2zT2kBmP").unwrap(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            Pubkey::from_str("CJ9f8WFdm3q38pmg426xQf7uum7RqvrmS9R58usHwNX7").unwrap(),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
         );
         let events = parser
             .parse_transaction(serde_json::to_string(&txs[7]).unwrap())
@@ -696,9 +706,9 @@ mod tests {
         let txs = transaction_fixtures();
         let parser = TransactionParser::new(
             "solana".to_string(),
-            Pubkey::from_str("H9XpBVCnYxr7cHd66nqtD8RSTrKY6JC32XVu2zT2kBmP").unwrap(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            Pubkey::from_str("CJ9f8WFdm3q38pmg426xQf7uum7RqvrmS9R58usHwNX7").unwrap(),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
         );
         let events = parser
             .parse_transaction(serde_json::to_string(&txs[8]).unwrap())
@@ -722,9 +732,9 @@ mod tests {
         let txs = transaction_fixtures();
         let parser = TransactionParser::new(
             "solana".to_string(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            Pubkey::from_str("CJ9f8WFdm3q38pmg426xQf7uum7RqvrmS9R58usHwNX7").unwrap(),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
         );
         let events = parser
             .parse_transaction(serde_json::to_string(&txs[9]).unwrap())
@@ -748,9 +758,9 @@ mod tests {
         let txs = transaction_fixtures();
         let parser = TransactionParser::new(
             "solana".to_string(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            Pubkey::from_str("CJ9f8WFdm3q38pmg426xQf7uum7RqvrmS9R58usHwNX7").unwrap(),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
         );
         let events = parser
             .parse_transaction(serde_json::to_string(&txs[10]).unwrap())

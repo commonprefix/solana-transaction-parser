@@ -4,6 +4,8 @@ use crate::message_matching_key::MessageMatchingKey;
 use crate::parser::Parser;
 use async_trait::async_trait;
 use axelar_solana_gateway::events::MessageApprovedEvent;
+use base64::prelude::BASE64_STANDARD;
+use base64::Engine as _;
 use borsh::BorshDeserialize;
 use bs58::encode;
 use relayer_core::gmp_api::gmp_types::{
@@ -12,6 +14,7 @@ use relayer_core::gmp_api::gmp_types::{
 use solana_sdk::pubkey::Pubkey;
 use solana_transaction_status::UiCompiledInstruction;
 use tracing::debug;
+use uuid::Uuid;
 
 pub struct ParserMessageApproved {
     signature: String,
@@ -19,6 +22,7 @@ pub struct ParserMessageApproved {
     instruction: UiCompiledInstruction,
     expected_contract_address: Pubkey,
     accounts: Vec<String>,
+    timestamp: String,
 }
 
 impl ParserMessageApproved {
@@ -27,6 +31,7 @@ impl ParserMessageApproved {
         instruction: UiCompiledInstruction,
         expected_contract_address: Pubkey,
         accounts: Vec<String>,
+        timestamp: String,
     ) -> Result<Self, TransactionParsingError> {
         Ok(Self {
             signature,
@@ -34,6 +39,7 @@ impl ParserMessageApproved {
             instruction,
             expected_contract_address,
             accounts,
+            timestamp,
         })
     }
 
@@ -44,7 +50,7 @@ impl ParserMessageApproved {
     ) -> Result<MessageApprovedEvent, TransactionParsingError> {
         let payload =
             check_discriminators_and_address(instruction, expected_contract_address, accounts)?;
-        match MessageApprovedEvent::try_from_slice(payload.into_iter().as_slice()) {
+        match MessageApprovedEvent::try_from_slice(&payload) {
             Ok(event) => {
                 debug!("Message Approved event={:?}", event);
                 Ok(event)
@@ -106,15 +112,14 @@ impl Parser for ParserMessageApproved {
         Ok(Event::MessageApproved {
             common: CommonEventFields {
                 r#type: "MESSAGE_APPROVED".to_owned(),
-                event_id: self.signature.clone(),
+                event_id: Uuid::new_v4().to_string(),
                 meta: Some(MessageApprovedEventMetadata {
                     common_meta: EventMetadata {
                         tx_id: Some(self.signature.clone()),
                         from_address: None,
                         finalized: None,
                         source_context: None,
-                        timestamp: chrono::Utc::now()
-                            .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                        timestamp: self.timestamp.clone(),
                     },
                     command_id: Some(encode(parsed.command_id).into_string()),
                 }),
@@ -124,8 +129,7 @@ impl Parser for ParserMessageApproved {
                 source_chain: parsed.source_chain.clone(),
                 source_address: parsed.source_address.clone(),
                 destination_address: parsed.destination_address.to_string(),
-                // should this be hex encoded?
-                payload_hash: hex::encode(parsed.payload_hash),
+                payload_hash: BASE64_STANDARD.encode(parsed.payload_hash),
             },
             cost: Amount {
                 token_id: None,
@@ -161,8 +165,9 @@ mod tests {
         let mut parser = ParserMessageApproved::new(
             tx.signature.to_string(),
             compiled_ix,
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
             tx.account_keys,
+            tx.timestamp.unwrap_or_default().to_rfc3339(),
         )
         .await
         .unwrap();
@@ -175,20 +180,14 @@ mod tests {
                 let expected_event = Event::MessageApproved {
                     common: CommonEventFields {
                         r#type: "MESSAGE_APPROVED".to_owned(),
-                        event_id: sig.clone(),
+                        event_id: common.event_id.clone(),
                         meta: Some(MessageApprovedEventMetadata {
                             common_meta: EventMetadata {
                                 tx_id: Some(sig.clone()),
                                 from_address: None,
                                 finalized: None,
                                 source_context: None,
-                                timestamp: common
-                                    .meta
-                                    .as_ref()
-                                    .unwrap()
-                                    .common_meta
-                                    .timestamp
-                                    .clone(),
+                                timestamp: parser.timestamp.clone(),
                             },
                             command_id: Some(
                                 encode(parser.parsed.as_ref().unwrap().command_id).into_string(),
@@ -205,7 +204,8 @@ mod tests {
                             .unwrap()
                             .destination_address
                             .to_string(),
-                        payload_hash: hex::encode(parser.parsed.as_ref().unwrap().payload_hash),
+                        payload_hash: BASE64_STANDARD
+                            .encode(parser.parsed.as_ref().unwrap().payload_hash),
                     },
                     cost: Amount {
                         token_id: None,
@@ -230,8 +230,9 @@ mod tests {
         let mut parser = ParserMessageApproved::new(
             tx.signature.to_string(),
             compiled_ix,
-            Pubkey::from_str("7RdSDLUUy37Wqc6s9ebgo52AwhGiw4XbJWZJgidQ1fJc").unwrap(),
+            Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
             tx.account_keys,
+            tx.timestamp.unwrap_or_default().to_rfc3339(),
         )
         .await
         .unwrap();
