@@ -13,6 +13,7 @@ use solana_sdk::pubkey::Pubkey;
 use solana_transaction_status::UiCompiledInstruction;
 use std::collections::HashMap;
 use tracing::debug;
+use uuid::Uuid;
 
 pub struct ParserCallContract {
     signature: String,
@@ -22,6 +23,7 @@ pub struct ParserCallContract {
     accounts: Vec<String>,
     chain_name: String,
     index: InstructionIndex,
+    timestamp: String,
 }
 
 impl ParserCallContract {
@@ -32,6 +34,7 @@ impl ParserCallContract {
         chain_name: String,
         index: InstructionIndex,
         expected_contract_address: Pubkey,
+        timestamp: String,
     ) -> Result<Self, TransactionParsingError> {
         Ok(Self {
             signature,
@@ -41,6 +44,7 @@ impl ParserCallContract {
             accounts,
             chain_name,
             index,
+            timestamp,
         })
     }
 
@@ -129,14 +133,13 @@ impl Parser for ParserCallContract {
         Ok(Event::Call {
             common: CommonEventFields {
                 r#type: "CALL".to_owned(),
-                event_id: format!("{}-call", self.signature.clone()),
+                event_id: format!("{}-call", Uuid::new_v4()),
                 meta: Some(EventMetadata {
                     tx_id: Some(self.signature.clone()),
                     from_address: None,
                     finalized: None,
                     source_context: Some(source_context),
-                    timestamp: chrono::Utc::now()
-                        .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                    timestamp: self.timestamp.clone(),
                 }),
             },
             message: GatewayV2Message {
@@ -182,6 +185,7 @@ mod tests {
             "solana".to_string(),
             InstructionIndex::new(tx.signature.to_string(), 1, 2),
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
+            tx.timestamp.unwrap_or_default().to_string(),
         )
         .await
         .unwrap();
@@ -194,11 +198,11 @@ mod tests {
         parser.parse().await.unwrap();
         let event = parser.event(None).await.unwrap();
         match event {
-            Event::Call { .. } => {
+            Event::Call { ref common, .. } => {
                 let expected_event = Event::Call {
                     common: CommonEventFields {
                         r#type: "CALL".to_owned(),
-                        event_id: format!("{}-call", sig),
+                        event_id: common.event_id.clone(),
                         meta: Some(EventMetadata {
                             tx_id: Some(sig.to_string()),
                             from_address: None,
@@ -227,8 +231,7 @@ mod tests {
                                         .to_string(),
                                 ),
                             ])),
-                            timestamp: chrono::Utc::now()
-                                .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                            timestamp: parser.timestamp.clone(),
                         }),
                     },
                     message: GatewayV2Message {
@@ -276,6 +279,7 @@ mod tests {
             "solana".to_string(),
             InstructionIndex::new(tx.signature.to_string(), 1, 2),
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
+            tx.timestamp.unwrap_or_default().to_string(),
         )
         .await
         .unwrap();

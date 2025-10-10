@@ -3,12 +3,16 @@ use crate::error::TransactionParsingError;
 use crate::message_matching_key::MessageMatchingKey;
 use crate::parser::Parser;
 use async_trait::async_trait;
+use base64::prelude::BASE64_STANDARD;
+use base64::Engine as _;
 use borsh::BorshDeserialize;
 use relayer_core::gmp_api::gmp_types::{CommonEventFields, Event, EventMetadata, TokenManagerType};
 use solana_sdk::pubkey::Pubkey;
 use solana_transaction_status::UiCompiledInstruction;
 use tracing::debug;
+use uuid::Uuid;
 
+// TODO: Import it from the contract once ITSv2 is ready
 #[derive(BorshDeserialize, Clone, Debug)]
 pub struct LinkTokenStarted {
     pub token_id: [u8; 32],
@@ -25,6 +29,7 @@ pub struct ParserLinkTokenStarted {
     instruction: UiCompiledInstruction,
     expected_contract_address: Pubkey,
     accounts: Vec<String>,
+    timestamp: String,
 }
 
 impl ParserLinkTokenStarted {
@@ -33,6 +38,7 @@ impl ParserLinkTokenStarted {
         instruction: UiCompiledInstruction,
         expected_contract_address: Pubkey,
         accounts: Vec<String>,
+        timestamp: String,
     ) -> Result<Self, TransactionParsingError> {
         Ok(Self {
             signature,
@@ -40,6 +46,7 @@ impl ParserLinkTokenStarted {
             instruction,
             expected_contract_address,
             accounts,
+            timestamp,
         })
     }
 
@@ -104,14 +111,13 @@ impl Parser for ParserLinkTokenStarted {
         Ok(Event::ITSLinkTokenStarted {
             common: CommonEventFields {
                 r#type: "ITS/LINK_TOKEN_STARTED".to_owned(),
-                event_id: format!("{}-its-link-token-started", self.signature.clone()),
+                event_id: format!("{}-its-link-token-started", Uuid::new_v4()),
                 meta: Some(EventMetadata {
                     tx_id: Some(self.signature.clone()),
                     from_address: None,
                     finalized: None,
                     source_context: None,
-                    timestamp: chrono::Utc::now()
-                        .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                    timestamp: self.timestamp.clone(),
                 }),
             },
             destination_chain: parsed.destination_chain.clone(),
@@ -119,8 +125,8 @@ impl Parser for ParserLinkTokenStarted {
                 TransactionParsingError::Message("Missing message_id".to_string())
             })?,
             token_id: hex::encode(parsed.token_id),
-            source_token_address: hex::encode(parsed.source_token_address),
-            destination_token_address: hex::encode(parsed.destination_token_address),
+            source_token_address: BASE64_STANDARD.encode(parsed.source_token_address),
+            destination_token_address: BASE64_STANDARD.encode(parsed.destination_token_address),
             token_manager_type: u8_to_token_manager_type(parsed.token_manager_type)?,
             //params: parsed.params, // TBD if we need this
         })
@@ -168,6 +174,7 @@ mod tests {
             compiled_ix,
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
             tx.account_keys,
+            tx.timestamp.unwrap_or_default().to_string(),
         )
         .await
         .unwrap();
@@ -176,26 +183,30 @@ mod tests {
         parser.parse().await.unwrap();
         let event = parser.event(Some(format!("{}-1", sig))).await.unwrap();
         match event {
-            Event::ITSLinkTokenStarted { .. } => {
+            Event::ITSLinkTokenStarted { ref common, .. } => {
                 let expected_event = Event::ITSLinkTokenStarted {
                     common: CommonEventFields {
                         r#type: "ITS/LINK_TOKEN_STARTED".to_owned(),
-                        event_id: format!("{}-its-link-token-started", sig),
+                        event_id: common.event_id.clone(),
                         meta: Some(EventMetadata {
                             tx_id: Some(sig.to_string()),
                             from_address: None,
                             finalized: None,
                             source_context: None,
-                            timestamp: chrono::Utc::now()
-                                .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                            timestamp: parser.timestamp.clone(),
                         }),
                     },
                     message_id: format!("{}-1", sig),
                     token_id: hex::encode(parser.parsed.as_ref().unwrap().token_id),
-                    source_token_address: hex::encode(
-                        parser.parsed.as_ref().unwrap().source_token_address,
+                    source_token_address: BASE64_STANDARD.encode(
+                        parser
+                            .parsed
+                            .as_ref()
+                            .unwrap()
+                            .source_token_address
+                            .to_bytes(),
                     ),
-                    destination_token_address: hex::encode(
+                    destination_token_address: BASE64_STANDARD.encode(
                         parser
                             .parsed
                             .as_ref()
@@ -230,6 +241,7 @@ mod tests {
             compiled_ix,
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
             tx.account_keys,
+            tx.timestamp.unwrap_or_default().to_string(),
         )
         .await
         .unwrap();

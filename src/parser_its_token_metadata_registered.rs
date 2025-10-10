@@ -8,6 +8,9 @@ use relayer_core::gmp_api::gmp_types::{CommonEventFields, Event, EventMetadata};
 use solana_sdk::pubkey::Pubkey;
 use solana_transaction_status::UiCompiledInstruction;
 use tracing::debug;
+use uuid::Uuid;
+
+// TODO: Import it from the contract once ITSv2 is ready
 
 #[derive(BorshDeserialize, Clone, Debug)]
 pub struct TokenMetadataRegistered {
@@ -21,6 +24,7 @@ pub struct ParserTokenMetadataRegistered {
     instruction: UiCompiledInstruction,
     expected_contract_address: Pubkey,
     accounts: Vec<String>,
+    timestamp: String,
 }
 
 impl ParserTokenMetadataRegistered {
@@ -29,6 +33,7 @@ impl ParserTokenMetadataRegistered {
         instruction: UiCompiledInstruction,
         expected_contract_address: Pubkey,
         accounts: Vec<String>,
+        timestamp: String,
     ) -> Result<Self, TransactionParsingError> {
         Ok(Self {
             signature,
@@ -36,6 +41,7 @@ impl ParserTokenMetadataRegistered {
             instruction,
             expected_contract_address,
             accounts,
+            timestamp,
         })
     }
 
@@ -100,14 +106,13 @@ impl Parser for ParserTokenMetadataRegistered {
         Ok(Event::ITSTokenMetadataRegistered {
             common: CommonEventFields {
                 r#type: "ITS/TOKEN_METADATA_REGISTERED".to_owned(),
-                event_id: format!("{}-its-metadata", self.signature.clone()),
+                event_id: format!("{}-its-metadata", Uuid::new_v4()),
                 meta: Some(EventMetadata {
                     tx_id: Some(self.signature.clone()),
                     from_address: None,
                     finalized: None,
                     source_context: None,
-                    timestamp: chrono::Utc::now()
-                        .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                    timestamp: self.timestamp.clone(),
                 }),
             },
             message_id: message_id.ok_or_else(|| {
@@ -147,6 +152,7 @@ mod tests {
             compiled_ix,
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
             tx.account_keys,
+            tx.timestamp.unwrap_or_default().to_string(),
         )
         .await
         .unwrap();
@@ -155,18 +161,17 @@ mod tests {
         parser.parse().await.unwrap();
         let event = parser.event(Some(format!("{}-1", sig))).await.unwrap();
         match event {
-            Event::ITSTokenMetadataRegistered { .. } => {
+            Event::ITSTokenMetadataRegistered { ref common, .. } => {
                 let expected_event = Event::ITSTokenMetadataRegistered {
                     common: CommonEventFields {
                         r#type: "ITS/TOKEN_METADATA_REGISTERED".to_owned(),
-                        event_id: format!("{}-its-metadata", sig),
+                        event_id: common.event_id.clone(),
                         meta: Some(EventMetadata {
                             tx_id: Some(sig.to_string()),
                             from_address: None,
                             finalized: None,
                             source_context: None,
-                            timestamp: chrono::Utc::now()
-                                .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                            timestamp: parser.timestamp.clone(),
                         }),
                     },
                     message_id: format!("{}-1", sig),
@@ -194,6 +199,7 @@ mod tests {
             compiled_ix,
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
             tx.account_keys,
+            tx.timestamp.unwrap_or_default().to_string(),
         )
         .await
         .unwrap();

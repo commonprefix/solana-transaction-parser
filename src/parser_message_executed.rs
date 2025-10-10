@@ -13,6 +13,7 @@ use relayer_core::gmp_api::gmp_types::{
 use solana_sdk::pubkey::Pubkey;
 use solana_transaction_status::UiCompiledInstruction;
 use tracing::debug;
+use uuid::Uuid;
 
 pub struct ParserMessageExecuted {
     signature: String,
@@ -20,6 +21,7 @@ pub struct ParserMessageExecuted {
     instruction: UiCompiledInstruction,
     expected_contract_address: Pubkey,
     accounts: Vec<String>,
+    timestamp: String,
 }
 
 impl ParserMessageExecuted {
@@ -28,6 +30,7 @@ impl ParserMessageExecuted {
         instruction: UiCompiledInstruction,
         expected_contract_address: Pubkey,
         accounts: Vec<String>,
+        timestamp: String,
     ) -> Result<Self, TransactionParsingError> {
         Ok(Self {
             signature,
@@ -35,6 +38,7 @@ impl ParserMessageExecuted {
             instruction,
             expected_contract_address,
             accounts,
+            timestamp,
         })
     }
 
@@ -99,15 +103,14 @@ impl Parser for ParserMessageExecuted {
         Ok(Event::MessageExecuted {
             common: CommonEventFields {
                 r#type: "MESSAGE_EXECUTED".to_owned(),
-                event_id: self.signature.clone(),
+                event_id: Uuid::new_v4().to_string(),
                 meta: Some(MessageExecutedEventMetadata {
                     common_meta: EventMetadata {
                         tx_id: Some(self.signature.clone()),
                         from_address: None,
                         finalized: None,
                         source_context: None,
-                        timestamp: chrono::Utc::now()
-                            .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                        timestamp: self.timestamp.clone(),
                     },
                     command_id: Some(encode(parsed.command_id).into_string()),
                     child_message_ids: None,
@@ -153,6 +156,7 @@ mod tests {
             compiled_ix,
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
             tx.account_keys,
+            tx.timestamp.unwrap_or_default().to_string(),
         )
         .await
         .unwrap();
@@ -165,20 +169,14 @@ mod tests {
                 let expected_event = Event::MessageExecuted {
                     common: CommonEventFields {
                         r#type: "MESSAGE_EXECUTED".to_owned(),
-                        event_id: sig.clone(),
+                        event_id: common.event_id.clone(),
                         meta: Some(MessageExecutedEventMetadata {
                             common_meta: EventMetadata {
                                 tx_id: Some(sig.clone()),
                                 from_address: None,
                                 finalized: None,
                                 source_context: None,
-                                timestamp: common
-                                    .meta
-                                    .as_ref()
-                                    .unwrap()
-                                    .common_meta
-                                    .timestamp
-                                    .clone(),
+                                timestamp: parser.timestamp.clone(),
                             },
                             command_id: Some(
                                 encode(parser.parsed.as_ref().unwrap().command_id).into_string(),
@@ -215,6 +213,7 @@ mod tests {
             compiled_ix,
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
             tx.account_keys,
+            tx.timestamp.unwrap_or_default().to_string(),
         )
         .await
         .unwrap();

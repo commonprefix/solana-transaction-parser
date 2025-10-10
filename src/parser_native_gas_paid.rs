@@ -9,6 +9,7 @@ use relayer_core::gmp_api::gmp_types::{Amount, CommonEventFields, Event, EventMe
 use solana_sdk::pubkey::Pubkey;
 use solana_transaction_status::UiCompiledInstruction;
 use tracing::debug;
+use uuid::Uuid;
 
 pub struct ParserNativeGasPaid {
     signature: String,
@@ -16,6 +17,7 @@ pub struct ParserNativeGasPaid {
     instruction: UiCompiledInstruction,
     expected_contract_address: Pubkey,
     accounts: Vec<String>,
+    timestamp: String,
 }
 
 impl ParserNativeGasPaid {
@@ -24,6 +26,7 @@ impl ParserNativeGasPaid {
         instruction: UiCompiledInstruction,
         expected_contract_address: Pubkey,
         accounts: Vec<String>,
+        timestamp: String,
     ) -> Result<Self, TransactionParsingError> {
         Ok(Self {
             signature,
@@ -31,6 +34,7 @@ impl ParserNativeGasPaid {
             instruction,
             expected_contract_address,
             accounts,
+            timestamp,
         })
     }
 
@@ -105,14 +109,13 @@ impl Parser for ParserNativeGasPaid {
         Ok(Event::GasCredit {
             common: CommonEventFields {
                 r#type: "GAS_CREDIT".to_owned(),
-                event_id: format!("{}-gas", self.signature),
+                event_id: format!("{}-gas", Uuid::new_v4()),
                 meta: Some(EventMetadata {
                     tx_id: Some(self.signature.to_string()),
                     from_address: None,
                     finalized: None,
                     source_context: None,
-                    timestamp: chrono::Utc::now()
-                        .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                    timestamp: self.timestamp.clone(),
                 }),
             },
             message_id,
@@ -153,6 +156,7 @@ mod tests {
             compiled_ix,
             Pubkey::from_str("CJ9f8WFdm3q38pmg426xQf7uum7RqvrmS9R58usHwNX7").unwrap(),
             tx.account_keys,
+            tx.timestamp.unwrap_or_default().to_string(),
         )
         .await
         .unwrap();
@@ -161,18 +165,17 @@ mod tests {
         parser.parse().await.unwrap();
         let event = parser.event(Some(format!("{}-1", sig))).await.unwrap();
         match event {
-            Event::GasCredit { .. } => {
+            Event::GasCredit { ref common, .. } => {
                 let expected_event: Event = Event::GasCredit {
                     common: CommonEventFields {
                         r#type: "GAS_CREDIT".to_owned(),
-                        event_id: format!("{}-gas", sig),
+                        event_id: common.event_id.clone(),
                         meta: Some(EventMetadata {
                             tx_id: Some(sig.to_string()),
                             from_address: None,
                             finalized: None,
                             source_context: None,
-                            timestamp: chrono::Utc::now()
-                                .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                            timestamp: parser.timestamp.clone(),
                         }),
                     },
                     message_id: format!("{}-1", sig),
@@ -202,6 +205,7 @@ mod tests {
             compiled_ix,
             Pubkey::from_str("CJ9f8WFdm3q38pmg426xQf7uum7RqvrmS9R58usHwNX7").unwrap(),
             tx.account_keys,
+            tx.timestamp.unwrap_or_default().to_string(),
         )
         .await
         .unwrap();
