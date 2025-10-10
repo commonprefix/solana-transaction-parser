@@ -499,7 +499,7 @@ mod tests {
                 destination_chain,
                 ..
             } => {
-                assert_eq!(destination_chain, "ethereum");
+                assert_eq!(destination_chain, "solana-5");
                 assert_eq!(message.message_id, format!("{}-2.1", sig));
             }
             _ => panic!("Expected CallContract event"),
