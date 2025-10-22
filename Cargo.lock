@@ -530,6 +530,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "anchor-discriminators"
+version = "0.1.0"
+source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=v2-anchor#84434f0cc25dd2edf97eecbf2c68810a416f1d69"
+dependencies = [
+ "borsh 1.5.7",
+ "bs58",
+ "serde",
+ "sha2 0.10.9",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "anchor-lang"
 version = "0.31.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -574,21 +586,6 @@ checksum = "2bdf143115440fe621bdac3a29a1f7472e09f6cd82b2aa569429a0c13f103838"
 dependencies = [
  "anyhow",
  "serde",
-]
-
-[[package]]
-name = "anchor-spl"
-version = "0.31.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c08cb5d762c0694f74bd02c9a5b04ea53cefc496e2c27b3234acffca5cd076b"
-dependencies = [
- "anchor-lang",
- "spl-associated-token-account 6.0.0",
- "spl-pod",
- "spl-token 7.0.0",
- "spl-token-2022 6.0.0",
- "spl-token-group-interface 0.5.0",
- "spl-token-metadata-interface 0.6.0",
 ]
 
 [[package]]
@@ -1238,9 +1235,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "axelar-message-primitives"
+version = "0.1.0"
+source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=v2-anchor#84434f0cc25dd2edf97eecbf2c68810a416f1d69"
+dependencies = [
+ "alloy-primitives",
+ "alloy-sol-types",
+ "bnum 0.10.0",
+ "borsh 1.5.7",
+ "bytemuck",
+ "solana-program",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "axelar-solana-encoding"
 version = "0.1.0"
-source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=v2-anchor#b7e9d80d318fecdf543b4c61d1eaf43283801bec"
+source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=v2-anchor#84434f0cc25dd2edf97eecbf2c68810a416f1d69"
 dependencies = [
  "arrayref",
  "borsh 1.5.7",
@@ -1256,10 +1267,9 @@ dependencies = [
 [[package]]
 name = "axelar-solana-gas-service-v2"
 version = "0.1.0"
-source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=v2-anchor#b7e9d80d318fecdf543b4c61d1eaf43283801bec"
+source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=v2-anchor#84434f0cc25dd2edf97eecbf2c68810a416f1d69"
 dependencies = [
  "anchor-lang",
- "anchor-spl",
  "axelar-solana-operators",
  "bytemuck",
  "program-utils",
@@ -1268,9 +1278,10 @@ dependencies = [
 [[package]]
 name = "axelar-solana-gateway-v2"
 version = "0.1.0"
-source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=v2-anchor#b7e9d80d318fecdf543b4c61d1eaf43283801bec"
+source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=v2-anchor#84434f0cc25dd2edf97eecbf2c68810a416f1d69"
 dependencies = [
  "anchor-lang",
+ "axelar-message-primitives",
  "axelar-solana-encoding",
  "bitvec",
  "borsh 1.5.7",
@@ -1282,7 +1293,7 @@ dependencies = [
 [[package]]
 name = "axelar-solana-operators"
 version = "0.1.0"
-source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=v2-anchor#b7e9d80d318fecdf543b4c61d1eaf43283801bec"
+source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=v2-anchor#84434f0cc25dd2edf97eecbf2c68810a416f1d69"
 dependencies = [
  "anchor-lang",
  "program-utils",
@@ -1560,6 +1571,16 @@ dependencies = [
 
 [[package]]
 name = "bnum"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "56953345e39537a3e18bdaeba4cb0c58a78c1f61f361dc0fa7c5c7340ae87c5f"
+dependencies = [
+ "serde",
+ "serde-big-array",
+]
+
+[[package]]
+name = "bnum"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3e31ea183f6ee62ac8b8a8cf7feddd766317adfb13ff469de57ce033efd6a790"
@@ -1621,7 +1642,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "115e54d64eb62cdebad391c19efc9dce4981c690c85a33a12199d99bb9546fee"
 dependencies = [
  "borsh-derive 0.10.4",
- "hashbrown 0.13.2",
+ "hashbrown 0.12.3",
 ]
 
 [[package]]
@@ -2085,7 +2106,7 @@ checksum = "bf82335c14bd94eeb4d3c461b7aa419ecd7ea13c2efe24b97cd972bdb8044e7d"
 dependencies = [
  "base64 0.22.1",
  "bech32",
- "bnum",
+ "bnum 0.11.0",
  "cosmwasm-core",
  "cosmwasm-crypto",
  "cosmwasm-derive",
@@ -5358,8 +5379,9 @@ dependencies = [
 [[package]]
 name = "program-utils"
 version = "0.1.0"
-source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=v2-anchor#b7e9d80d318fecdf543b4c61d1eaf43283801bec"
+source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=v2-anchor#84434f0cc25dd2edf97eecbf2c68810a416f1d69"
 dependencies = [
+ "anchor-discriminators",
  "borsh 1.5.7",
  "bytemuck",
  "mpl-token-metadata",
