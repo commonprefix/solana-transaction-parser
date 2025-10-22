@@ -126,7 +126,7 @@ impl Parser for ParserNativeGasAdded {
     async fn message_id(&self) -> Result<Option<String>, TransactionParsingError> {
         if let Some(parsed) = self.parsed.clone() {
             // NOTE: These are emitted by the Programs as 1-indexed to mirror axelarscan and solscan
-            let index = InstructionIndex::deserialize(parsed.message_id.to_string())?;
+            let index = InstructionIndex::deserialize(parsed.message_id)?;
             Ok(Some(index.serialize()))
         } else {
             Ok(None)

@@ -29,7 +29,7 @@ use relayer_core::gmp_api::gmp_types::Event;
 use solana_sdk::pubkey::Pubkey;
 use solana_transaction_status::UiInstruction;
 use std::collections::HashMap;
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
 #[async_trait]
 pub trait Parser {
@@ -198,12 +198,11 @@ impl TransactionParser {
 
                     let index = InstructionIndex::new(
                         transaction.signature.to_string(),
-                        group
-                            .index
-                            .checked_add(1)
-                            .ok_or(TransactionParsingError::IndexOverflow(
+                        group.index.checked_add(1).ok_or(
+                            TransactionParsingError::IndexOverflow(
                                 "Outer index overflow".to_string(),
-                            ))? as u8,
+                            ),
+                        )?,
                         inner_index
                             .checked_add(1)
                             .ok_or(TransactionParsingError::IndexOverflow(
@@ -223,7 +222,7 @@ impl TransactionParser {
                     };
 
                     match event_type_discriminator {
-                        x if x == GasPaidEvent::DISCRIMINATOR => {
+                        GasPaidEvent::DISCRIMINATOR => {
                             let mut parser = ParserNativeGasPaid::new(
                                 transaction.signature.to_string(),
                                 ci.clone(),
@@ -242,7 +241,7 @@ impl TransactionParser {
                                 gas_credit_map.insert(key, Box::new(parser));
                             }
                         }
-                        x if x == GasAddedEvent::DISCRIMINATOR => {
+                        GasAddedEvent::DISCRIMINATOR => {
                             let mut parser = ParserNativeGasAdded::new(
                                 transaction.signature.to_string(),
                                 ci.clone(),
@@ -260,7 +259,7 @@ impl TransactionParser {
                                 parsers.push(Box::new(parser));
                             }
                         }
-                        x if x == GasRefundedEvent::DISCRIMINATOR => {
+                        GasRefundedEvent::DISCRIMINATOR => {
                             let mut parser = ParserNativeGasRefunded::new(
                                 transaction.signature.to_string(),
                                 ci.clone(),
@@ -279,7 +278,7 @@ impl TransactionParser {
                                 parsers.push(Box::new(parser));
                             }
                         }
-                        x if x == CallContractEvent::DISCRIMINATOR => {
+                        CallContractEvent::DISCRIMINATOR => {
                             let mut parser = ParserCallContract::new(
                                 transaction.signature.to_string(),
                                 ci.clone(),
@@ -299,7 +298,7 @@ impl TransactionParser {
                                 call_contract.push(Box::new(parser));
                             }
                         }
-                        x if x == MessageApprovedEvent::DISCRIMINATOR => {
+                        MessageApprovedEvent::DISCRIMINATOR => {
                             let mut parser = ParserMessageApproved::new(
                                 transaction.signature.to_string(),
                                 ci.clone(),
@@ -318,7 +317,7 @@ impl TransactionParser {
                                 message_approved_count += 1;
                             }
                         }
-                        x if x == MessageExecutedEvent::DISCRIMINATOR => {
+                        MessageExecutedEvent::DISCRIMINATOR => {
                             let mut parser = ParserMessageExecuted::new(
                                 transaction.signature.to_string(),
                                 ci.clone(),
@@ -337,7 +336,7 @@ impl TransactionParser {
                                 message_executed_count += 1;
                             }
                         }
-                        x if x == VerifierSetRotatedEvent::DISCRIMINATOR => {
+                        VerifierSetRotatedEvent::DISCRIMINATOR => {
                             let mut parser = ParserSignersRotated::new(
                                 transaction.signature.to_string(),
                                 ci.clone(),
@@ -356,7 +355,7 @@ impl TransactionParser {
                                 parsers.push(Box::new(parser));
                             }
                         }
-                        x if x == ITS_INTERCHAIN_TRANSFER_EVENT_DISC => {
+                        ITS_INTERCHAIN_TRANSFER_EVENT_DISC => {
                             let mut parser = ParserInterchainTransfer::new(
                                 transaction.signature.to_string(),
                                 ci.clone(),
@@ -374,7 +373,7 @@ impl TransactionParser {
                                 its_parsers.push(Box::new(parser));
                             }
                         }
-                        x if x == ITS_INTERCHAIN_TOKEN_DEPLOYMENT_STARTED_EVENT_DISC => {
+                        ITS_INTERCHAIN_TOKEN_DEPLOYMENT_STARTED_EVENT_DISC => {
                             let mut parser = ParserInterchainTokenDeploymentStarted::new(
                                 transaction.signature.to_string(),
                                 ci.clone(),
@@ -392,7 +391,7 @@ impl TransactionParser {
                                 its_parsers.push(Box::new(parser));
                             }
                         }
-                        x if x == ITS_LINK_TOKEN_STARTED_EVENT_DISC => {
+                        ITS_LINK_TOKEN_STARTED_EVENT_DISC => {
                             let mut parser = ParserLinkTokenStarted::new(
                                 transaction.signature.to_string(),
                                 ci.clone(),
@@ -410,7 +409,7 @@ impl TransactionParser {
                                 its_parsers.push(Box::new(parser));
                             }
                         }
-                        x if x == ITS_TOKEN_METADATA_REGISTERED_EVENT_DISC => {
+                        ITS_TOKEN_METADATA_REGISTERED_EVENT_DISC => {
                             let mut parser = ParserTokenMetadataRegistered::new(
                                 transaction.signature.to_string(),
                                 ci.clone(),
@@ -429,7 +428,10 @@ impl TransactionParser {
                             }
                         }
                         _ => {
-                            // Unknown event type discriminator; skip
+                            debug!(
+                                "Unknown event type discriminator: {:?}",
+                                event_type_discriminator
+                            );
                             continue;
                         }
                     }
