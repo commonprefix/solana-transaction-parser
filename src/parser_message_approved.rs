@@ -1,8 +1,8 @@
+use crate::common::check_discriminators_and_address;
 use crate::error::TransactionParsingError;
 use crate::message_matching_key::MessageMatchingKey;
 use crate::parser::Parser;
-use crate::redis::TransactionType;
-use crate::{common::check_discriminators_and_address, redis::CostCacheTrait};
+use crate::redis::{CostCacheRef, TransactionType};
 use anchor_lang::AnchorDeserialize;
 use async_trait::async_trait;
 use axelar_solana_gateway::events::MessageApprovedEvent;
@@ -12,30 +12,29 @@ use bs58::encode;
 use relayer_core::gmp_api::gmp_types::{
     Amount, CommonEventFields, Event, EventMetadata, GatewayV2Message, MessageApprovedEventMetadata,
 };
-use relayer_core::utils::ThreadSafe;
 use solana_sdk::pubkey::Pubkey;
 use solana_transaction_status::UiCompiledInstruction;
 use tracing::debug;
 use uuid::Uuid;
 
-pub struct ParserMessageApproved<CC: CostCacheTrait + ThreadSafe> {
+pub struct ParserMessageApproved {
     signature: String,
     parsed: Option<MessageApprovedEvent>,
     instruction: UiCompiledInstruction,
     expected_contract_address: Pubkey,
     accounts: Vec<String>,
     timestamp: String,
-    cost_cache: CC,
+    cost_cache: CostCacheRef,
 }
 
-impl<CC: CostCacheTrait + ThreadSafe> ParserMessageApproved<CC> {
+impl ParserMessageApproved {
     pub(crate) async fn new(
         signature: String,
         instruction: UiCompiledInstruction,
         expected_contract_address: Pubkey,
         accounts: Vec<String>,
         timestamp: String,
-        cost_cache: CC,
+        cost_cache: CostCacheRef,
     ) -> Result<Self, TransactionParsingError> {
         Ok(Self {
             signature,
@@ -68,7 +67,7 @@ impl<CC: CostCacheTrait + ThreadSafe> ParserMessageApproved<CC> {
 }
 
 #[async_trait]
-impl<CC: CostCacheTrait + ThreadSafe> Parser for ParserMessageApproved<CC> {
+impl Parser for ParserMessageApproved {
     async fn parse(&mut self) -> Result<bool, TransactionParsingError> {
         if self.parsed.is_none() {
             self.parsed = Some(Self::try_extract_with_config(
@@ -142,6 +141,7 @@ impl<CC: CostCacheTrait + ThreadSafe> Parser for ParserMessageApproved<CC> {
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
+    use std::sync::Arc;
 
     use solana_transaction_status::UiInstruction;
 
@@ -159,13 +159,16 @@ mod tests {
             _ => panic!("expected a compiled instruction"),
         };
 
+        let mut mock = MockCostCacheTrait::new();
+        mock.expect_get_cost_by_message_id().returning(|_, _| Ok(0));
+
         let mut parser = ParserMessageApproved::new(
             tx.signature.to_string(),
             compiled_ix,
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
             tx.account_keys,
             tx.timestamp.unwrap_or_default().to_rfc3339(),
-            MockCostCacheTrait::new(),
+            Arc::new(mock),
         )
         .await
         .unwrap();
@@ -235,11 +238,11 @@ mod tests {
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
             tx.account_keys,
             tx.timestamp.unwrap_or_default().to_rfc3339(),
-            MockCostCacheTrait::new(),
+            Arc::new(MockCostCacheTrait::new()),
         )
         .await
         .unwrap();
 
-        assert!(!parser.parse().await.unwrap());
+        assert!(parser.parse().await.is_err());
     }
 }

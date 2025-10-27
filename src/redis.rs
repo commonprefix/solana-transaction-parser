@@ -2,6 +2,7 @@ use redis::{aio::ConnectionManager, AsyncCommands};
 use relayer_core::utils::ThreadSafe;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
+use std::sync::Arc;
 use tracing::{debug, error};
 
 #[derive(Clone)]
@@ -17,13 +18,16 @@ impl CostCache {
 
 #[cfg_attr(test, mockall::automock)]
 #[async_trait::async_trait]
-pub trait CostCacheTrait: ThreadSafe + Clone {
+pub trait CostCacheTrait: ThreadSafe {
     async fn get_cost_by_message_id(
         &self,
         message_id: String,
         transaction_type: TransactionType,
     ) -> Result<u64, anyhow::Error>;
 }
+
+// Type alias for Arc-wrapped trait objects to make them cloneable
+pub type CostCacheRef = Arc<dyn CostCacheTrait>;
 
 #[async_trait::async_trait]
 impl CostCacheTrait for CostCache {
@@ -82,12 +86,5 @@ impl Display for TransactionType {
             TransactionType::Approve => "approve",
         };
         write!(f, "{}", s)
-    }
-}
-
-#[cfg(test)]
-impl Clone for MockCostCacheTrait {
-    fn clone(&self) -> Self {
-        Self::new()
     }
 }

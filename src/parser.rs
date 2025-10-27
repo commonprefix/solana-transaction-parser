@@ -13,7 +13,7 @@ use crate::parser_native_gas_paid::ParserNativeGasPaid;
 use crate::parser_native_gas_refunded::ParserNativeGasRefunded;
 use crate::parser_signers_rotated::ParserSignersRotated;
 use crate::types::SolanaTransaction;
-use crate::{error::TransactionParsingError, redis::CostCacheTrait};
+use crate::{error::TransactionParsingError, redis::CostCacheRef};
 use anchor_lang::Discriminator;
 use async_trait::async_trait;
 use axelar_solana_gas_service::events::{GasAddedEvent, GasPaidEvent, GasRefundedEvent};
@@ -45,12 +45,12 @@ pub trait Parser: ThreadSafe {
 }
 
 #[derive(Clone)]
-pub struct TransactionParser<CC: CostCacheTrait> {
+pub struct TransactionParser {
     chain_name: String,
     gas_service_address: Pubkey,
     gateway_address: Pubkey,
     its_address: Pubkey,
-    cost_cache: CC,
+    cost_cache: CostCacheRef,
 }
 
 #[cfg_attr(test, mockall::automock)]
@@ -63,7 +63,7 @@ pub trait TransactionParserTrait: Send + Sync {
 }
 
 #[async_trait]
-impl<CC: CostCacheTrait + Clone> TransactionParserTrait for TransactionParser<CC> {
+impl TransactionParserTrait for TransactionParser {
     async fn parse_transaction(
         &self,
         transaction: String,
@@ -139,13 +139,13 @@ impl<CC: CostCacheTrait + Clone> TransactionParserTrait for TransactionParser<CC
     }
 }
 
-impl<CC: CostCacheTrait + Clone> TransactionParser<CC> {
+impl TransactionParser {
     pub fn new(
         chain_name: String,
         gas_service_address: Pubkey,
         gateway_address: Pubkey,
         its_address: Pubkey,
-        cost_cache: CC,
+        cost_cache: CostCacheRef,
     ) -> Self {
         Self {
             chain_name,
@@ -409,6 +409,7 @@ impl<CC: CostCacheTrait + Clone> TransactionParser<CC> {
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
+    use std::sync::Arc;
 
     use super::*;
     use crate::redis::MockCostCacheTrait;
@@ -417,12 +418,13 @@ mod tests {
     #[tokio::test]
     async fn test_parser_converted_and_message_id_set() {
         let txs = transaction_fixtures();
+        let mock = Arc::new(MockCostCacheTrait::new());
         let parser = TransactionParser::new(
             "solana".to_string(),
             Pubkey::from_str("CJ9f8WFdm3q38pmg426xQf7uum7RqvrmS9R58usHwNX7").unwrap(),
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
-            MockCostCacheTrait::new(),
+            mock,
         );
         let events = parser
             .parse_transaction(serde_json::to_string(&txs[0]).unwrap())
@@ -459,21 +461,19 @@ mod tests {
 
     #[tokio::test]
     async fn test_message_executed() {
-        let mut mock_cost_cache = MockCostCacheTrait::new();
         let txs = transaction_fixtures();
-
         let cost_units = txs[3].cost_units;
 
-        mock_cost_cache
-            .expect_get_cost_by_message_id()
-            .return_once(move |_, _| Ok(cost_units));
+        let mut mock = MockCostCacheTrait::new();
+        mock.expect_get_cost_by_message_id()
+            .returning(move |_, _| Ok(cost_units));
 
         let parser = TransactionParser::new(
             "solana".to_string(),
             Pubkey::from_str("CJ9f8WFdm3q38pmg426xQf7uum7RqvrmS9R58usHwNX7").unwrap(),
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
-            mock_cost_cache,
+            Arc::new(mock),
         );
 
         let events = parser
@@ -494,20 +494,19 @@ mod tests {
 
     #[tokio::test]
     async fn test_message_approved() {
-        let mut mock_cost_cache = MockCostCacheTrait::new();
         let txs = transaction_fixtures();
-
         let cost_units = txs[1].cost_units;
 
-        mock_cost_cache
-            .expect_get_cost_by_message_id()
-            .return_once(move |_, _| Ok(cost_units));
+        let mut mock = MockCostCacheTrait::new();
+        mock.expect_get_cost_by_message_id()
+            .returning(move |_, _| Ok(cost_units));
+
         let parser = TransactionParser::new(
             "solana".to_string(),
             Pubkey::from_str("CJ9f8WFdm3q38pmg426xQf7uum7RqvrmS9R58usHwNX7").unwrap(),
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
-            mock_cost_cache,
+            Arc::new(mock),
         );
 
         let events = parser
@@ -532,7 +531,7 @@ mod tests {
             Pubkey::from_str("CJ9f8WFdm3q38pmg426xQf7uum7RqvrmS9R58usHwNX7").unwrap(),
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
-            MockCostCacheTrait::new(),
+            Arc::new(MockCostCacheTrait::new()),
         );
         let events = parser
             .parse_transaction(serde_json::to_string(&txs[2]).unwrap())
@@ -557,7 +556,7 @@ mod tests {
             Pubkey::from_str("CJ9f8WFdm3q38pmg426xQf7uum7RqvrmS9R58usHwNX7").unwrap(),
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
-            MockCostCacheTrait::new(),
+            Arc::new(MockCostCacheTrait::new()),
         );
         let events = parser
             .parse_transaction(serde_json::to_string(&txs[4]).unwrap())
@@ -579,7 +578,7 @@ mod tests {
             Pubkey::from_str("CJ9f8WFdm3q38pmg426xQf7uum7RqvrmS9R58usHwNX7").unwrap(),
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
-            MockCostCacheTrait::new(),
+            Arc::new(MockCostCacheTrait::new()),
         );
         let events = parser
             .parse_transaction(serde_json::to_string(&txs[7]).unwrap())
@@ -606,7 +605,7 @@ mod tests {
             Pubkey::from_str("CJ9f8WFdm3q38pmg426xQf7uum7RqvrmS9R58usHwNX7").unwrap(),
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
-            MockCostCacheTrait::new(),
+            Arc::new(MockCostCacheTrait::new()),
         );
         let events = parser
             .parse_transaction(serde_json::to_string(&txs[8]).unwrap())
@@ -633,7 +632,7 @@ mod tests {
             Pubkey::from_str("CJ9f8WFdm3q38pmg426xQf7uum7RqvrmS9R58usHwNX7").unwrap(),
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
-            MockCostCacheTrait::new(),
+            Arc::new(MockCostCacheTrait::new()),
         );
         let events = parser
             .parse_transaction(serde_json::to_string(&txs[9]).unwrap())
@@ -660,7 +659,7 @@ mod tests {
             Pubkey::from_str("CJ9f8WFdm3q38pmg426xQf7uum7RqvrmS9R58usHwNX7").unwrap(),
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
-            MockCostCacheTrait::new(),
+            Arc::new(MockCostCacheTrait::new()),
         );
         let events = parser
             .parse_transaction(serde_json::to_string(&txs[10]).unwrap())

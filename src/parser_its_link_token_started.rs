@@ -231,6 +231,6 @@ mod tests {
         )
         .await
         .unwrap();
-        assert!(!parser.parse().await.unwrap());
+        assert!(parser.parse().await.is_err());
     }
 }
