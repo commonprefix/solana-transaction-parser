@@ -9,6 +9,12 @@ pub struct CostCache {
     conn: ConnectionManager,
 }
 
+impl CostCache {
+    pub fn new(conn: ConnectionManager) -> Self {
+        Self { conn }
+    }
+}
+
 #[cfg_attr(test, mockall::automock)]
 #[async_trait::async_trait]
 pub trait CostCacheTrait: ThreadSafe + Clone {
