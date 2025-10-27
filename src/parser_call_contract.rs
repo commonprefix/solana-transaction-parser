@@ -80,20 +80,6 @@ impl Parser for ParserCallContract {
         Ok(self.parsed.is_some())
     }
 
-    async fn is_match(&mut self) -> Result<bool, TransactionParsingError> {
-        match Self::try_extract_with_config(
-            &self.instruction,
-            self.expected_contract_address,
-            &self.accounts,
-        ) {
-            Ok(parsed) => {
-                self.parsed = Some(parsed);
-                Ok(true)
-            }
-            Err(_) => Ok(false),
-        }
-    }
-
     async fn key(&self) -> Result<MessageMatchingKey, TransactionParsingError> {
         let parsed = self
             .parsed
@@ -189,7 +175,6 @@ mod tests {
         )
         .await
         .unwrap();
-        assert!(parser.is_match().await.unwrap());
         let sig = tx.signature.clone().to_string();
         assert_eq!(
             parser.message_id().await.unwrap().unwrap(),
@@ -283,6 +268,7 @@ mod tests {
         )
         .await
         .unwrap();
-        assert!(!parser.is_match().await.unwrap());
+
+        assert!(!parser.parse().await.unwrap());
     }
 }

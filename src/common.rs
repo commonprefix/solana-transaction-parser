@@ -30,11 +30,6 @@ pub fn check_discriminators_and_address(
         warn!("invalid instruction data: {:?}", e);
         TransactionParsingError::InvalidAccountAddress(e.to_string())
     })?;
-    if bytes.len() < 16 {
-        return Err(TransactionParsingError::InvalidInstructionData(
-            "instruction data is too short".to_string(),
-        ));
-    }
 
     Ok(bytes
         .get(16..)

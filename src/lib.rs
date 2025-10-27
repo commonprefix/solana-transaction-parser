@@ -1,5 +1,4 @@
 pub mod common;
-pub mod discriminators;
 pub mod error;
 pub mod instruction_index;
 pub mod message_matching_key;
@@ -15,6 +14,7 @@ pub mod parser_native_gas_added;
 pub mod parser_native_gas_paid;
 pub mod parser_native_gas_refunded;
 pub mod parser_signers_rotated;
+pub mod redis;
 pub mod types;
 pub use relayer_core::gmp_api::gmp_types;
 

@@ -18,4 +18,6 @@ pub enum TransactionParsingError {
     IndexOverflow(String),
     #[error("InvalidTransaction: {0}")]
     InvalidTransaction(String),
+    #[error("CostCacheError: {0}")]
+    CostCacheError(String),
 }

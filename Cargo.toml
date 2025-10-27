@@ -4,8 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-axelar-solana-gateway = { git = "https://github.com/axelarnetwork/axelar-amplifier-solana", branch = "v2-anchor", package = "axelar-solana-gateway-v2", features = ["no-entrypoint"] }
-axelar-solana-gas-service = { git = "https://github.com/axelarnetwork/axelar-amplifier-solana", branch = "v2-anchor", package = "axelar-solana-gas-service-v2", features = ["no-entrypoint"] }
+axelar-solana-gateway = { git = "https://github.com/axelarnetwork/axelar-amplifier-solana", branch = "v2-anchor-its-execute-wip", package = "axelar-solana-gateway-v2", features = ["no-entrypoint"] }
+axelar-solana-gas-service = { git = "https://github.com/axelarnetwork/axelar-amplifier-solana", branch = "v2-anchor-its-execute-wip", package = "axelar-solana-gas-service-v2", features = ["no-entrypoint"] }
+axelar-solana-its = { git = "https://github.com/axelarnetwork/axelar-amplifier-solana", branch = "v2-anchor-its-execute-wip", package = "axelar-solana-its-v2", features = ["no-entrypoint"] }
 relayer-core = { git = "https://github.com/commonprefix/axelar-relayer-core", branch = "temp-solana", features = ["mocks"] }
 anchor-lang = "0.31.1"
 hex = "0.4.3"
@@ -21,6 +22,7 @@ thiserror = "2.0.3"
 async-trait = "0.1.88"
 base64 = "0.22.1"
 solana-sdk = "~2.3"
+redis = { version = "0.32.4", features = ["tokio-rustls-comp"] }
 solana-transaction-status = "~2.3"
 borsh = { version = "1", features = ["derive"] }
 chrono = { version = "0.4.40", features = ["serde"] }

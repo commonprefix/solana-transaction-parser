@@ -86,20 +86,6 @@ impl Parser for ParserInterchainTokenDeploymentStarted {
         Ok(self.parsed.is_some())
     }
 
-    async fn is_match(&mut self) -> Result<bool, TransactionParsingError> {
-        match Self::try_extract_with_config(
-            &self.instruction,
-            self.expected_contract_address,
-            &self.accounts,
-        ) {
-            Ok(parsed) => {
-                self.parsed = Some(parsed);
-                Ok(true)
-            }
-            Err(_) => Ok(false),
-        }
-    }
-
     async fn key(&self) -> Result<MessageMatchingKey, TransactionParsingError> {
         Err(TransactionParsingError::Message(
             "MessageMatchingKey is not available for InterchainTokenDeploymentStarted".to_string(),
@@ -173,7 +159,7 @@ mod tests {
         )
         .await
         .unwrap();
-        assert!(parser.is_match().await.unwrap());
+        assert!(parser.parse().await.unwrap());
         let sig = tx.signature.clone().to_string();
         parser.parse().await.unwrap();
         let event = parser.event(Some(format!("{}-1", sig))).await.unwrap();
@@ -228,6 +214,6 @@ mod tests {
         )
         .await
         .unwrap();
-        assert!(!parser.is_match().await.unwrap());
+        assert!(!parser.parse().await.unwrap());
     }
 }

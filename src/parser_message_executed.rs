@@ -1,7 +1,10 @@
-use crate::common::check_discriminators_and_address;
 use crate::error::TransactionParsingError;
 use crate::message_matching_key::MessageMatchingKey;
 use crate::parser::Parser;
+use crate::{
+    common::check_discriminators_and_address,
+    redis::{CostCacheTrait, TransactionType},
+};
 use anchor_lang::AnchorDeserialize;
 use async_trait::async_trait;
 use axelar_solana_gateway::events::MessageExecutedEvent;
@@ -10,27 +13,30 @@ use relayer_core::gmp_api::gmp_types::{
     Amount, CommonEventFields, Event, EventMetadata, MessageExecutedEventMetadata,
     MessageExecutionStatus,
 };
+use relayer_core::utils::ThreadSafe;
 use solana_sdk::pubkey::Pubkey;
 use solana_transaction_status::UiCompiledInstruction;
 use tracing::debug;
 use uuid::Uuid;
 
-pub struct ParserMessageExecuted {
+pub struct ParserMessageExecuted<CC: CostCacheTrait + ThreadSafe> {
     signature: String,
     parsed: Option<MessageExecutedEvent>,
     instruction: UiCompiledInstruction,
     expected_contract_address: Pubkey,
     accounts: Vec<String>,
     timestamp: String,
+    cost_cache: CC,
 }
 
-impl ParserMessageExecuted {
+impl<CC: CostCacheTrait + ThreadSafe> ParserMessageExecuted<CC> {
     pub(crate) async fn new(
         signature: String,
         instruction: UiCompiledInstruction,
         expected_contract_address: Pubkey,
         accounts: Vec<String>,
         timestamp: String,
+        cost_cache: CC,
     ) -> Result<Self, TransactionParsingError> {
         Ok(Self {
             signature,
@@ -39,6 +45,7 @@ impl ParserMessageExecuted {
             expected_contract_address,
             accounts,
             timestamp,
+            cost_cache,
         })
     }
 
@@ -62,7 +69,7 @@ impl ParserMessageExecuted {
 }
 
 #[async_trait]
-impl Parser for ParserMessageExecuted {
+impl<CC: CostCacheTrait + ThreadSafe> Parser for ParserMessageExecuted<CC> {
     async fn parse(&mut self) -> Result<bool, TransactionParsingError> {
         if self.parsed.is_none() {
             self.parsed = Some(Self::try_extract_with_config(
@@ -72,20 +79,6 @@ impl Parser for ParserMessageExecuted {
             )?);
         }
         Ok(self.parsed.is_some())
-    }
-
-    async fn is_match(&mut self) -> Result<bool, TransactionParsingError> {
-        match Self::try_extract_with_config(
-            &self.instruction,
-            self.expected_contract_address,
-            &self.accounts,
-        ) {
-            Ok(parsed) => {
-                self.parsed = Some(parsed);
-                Ok(true)
-            }
-            Err(_) => Ok(false),
-        }
     }
 
     async fn key(&self) -> Result<MessageMatchingKey, TransactionParsingError> {
@@ -122,7 +115,12 @@ impl Parser for ParserMessageExecuted {
             status: MessageExecutionStatus::SUCCESSFUL,
             cost: Amount {
                 token_id: None,
-                amount: "0".to_string(),
+                amount: self
+                    .cost_cache
+                    .get_cost_by_message_id(parsed.cc_id.clone(), TransactionType::Execute)
+                    .await
+                    .map_err(|e| TransactionParsingError::CostCacheError(e.to_string()))?
+                    .to_string(),
             },
         })
     }
@@ -140,6 +138,7 @@ mod tests {
 
     use super::*;
     use crate::parser_message_executed::ParserMessageExecuted;
+    use crate::redis::MockCostCacheTrait;
     use crate::test_utils::fixtures::transaction_fixtures;
     #[tokio::test]
     async fn test_parser() {
@@ -157,15 +156,20 @@ mod tests {
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
             tx.account_keys,
             tx.timestamp.unwrap_or_default().to_rfc3339(),
+            MockCostCacheTrait::new(),
         )
         .await
         .unwrap();
-        assert!(parser.is_match().await.unwrap());
+        assert!(parser.parse().await.unwrap());
         let sig = tx.signature.clone().to_string();
         parser.parse().await.unwrap();
         let event = parser.event(Some(format!("{}-1", sig))).await.unwrap();
         match event {
-            Event::MessageExecuted { ref common, .. } => {
+            Event::MessageExecuted {
+                ref common,
+                ref cost,
+                ..
+            } => {
                 let expected_event = Event::MessageExecuted {
                     common: CommonEventFields {
                         r#type: "MESSAGE_EXECUTED".to_owned(),
@@ -190,7 +194,7 @@ mod tests {
                     status: MessageExecutionStatus::SUCCESSFUL,
                     cost: Amount {
                         token_id: None,
-                        amount: "0".to_string(),
+                        amount: cost.amount.clone(),
                     },
                 };
                 assert_eq!(event, expected_event);
@@ -214,10 +218,11 @@ mod tests {
             Pubkey::from_str("8YsLGnLV2KoyxdksgiAi3gh1WvhMrznA2toKWqyz91bR").unwrap(),
             tx.account_keys,
             tx.timestamp.unwrap_or_default().to_rfc3339(),
+            MockCostCacheTrait::new(),
         )
         .await
         .unwrap();
 
-        assert!(!parser.is_match().await.unwrap());
+        assert!(!parser.parse().await.unwrap());
     }
 }
