@@ -11,7 +11,6 @@ relayer-core = { git = "https://github.com/commonprefix/axelar-relayer-core", br
 anchor-lang = "0.31.1"
 hex = "0.4.3"
 bs58 = "0.5"
-interchain-token-service = { git = "https://github.com/commonprefix/axelar-amplifier", branch = "xrpl", package = "interchain-token-service" }
 tracing = "0.1.40"
 anyhow = "1.0.93"
 serde = "1.0.215"
