@@ -41,40 +41,27 @@ impl CostCacheTrait for CostCache {
         match conn.get::<_, Option<String>>(&key).await {
             Ok(Some(serialized)) => {
                 if let Ok(cost) = serialized.parse::<u64>() {
-                    debug!("Cost for message_id {} is {}", message_id, cost);
+                    debug!("Cost for key {} is {}", key, cost);
                     return Ok(cost);
                 } else {
-                    error!(
-                        "Failed to parse cost for message_id {}: {}",
-                        message_id, serialized
-                    );
+                    error!("Failed to parse cost for key {}: {}", key, serialized);
                     return Err(anyhow::anyhow!(
-                        "Failed to parse cost for message_id {}: {}",
-                        message_id,
+                        "Failed to parse cost for key {}: {}",
+                        key,
                         serialized
                     ));
                 }
             }
             Ok(None) => {
-                error!(
-                    "Failed to get cost for message_id {}: Key not found in Redis",
-                    message_id
-                );
+                error!("Failed to get cost for key {}: Key not found in Redis", key);
                 return Err(anyhow::anyhow!(
-                    "Failed to get cost for message_id {}: Key not found in Redis",
-                    message_id
+                    "Failed to get cost for key {}: Key not found in Redis",
+                    key
                 ));
             }
             Err(e) => {
-                error!(
-                    "Failed to get context from Redis for message_id {}: {}",
-                    message_id, e
-                );
-                return Err(anyhow::anyhow!(
-                    "Failed to get cost for message_id {}: {}",
-                    message_id,
-                    e
-                ));
+                error!("Failed to get context from Redis for key {}: {}", key, e);
+                return Err(anyhow::anyhow!("Failed to get cost for key {}: {}", key, e));
             }
         }
     }
