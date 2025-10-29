@@ -38,8 +38,8 @@ impl CostCacheTrait for CostCache {
     ) -> Result<u64, anyhow::Error> {
         let key = format!("cost:{}:{}", transaction_type, message_id);
         let mut conn = self.conn.clone();
-        match conn.get::<_, String>(&key).await {
-            Ok(serialized) => {
+        match conn.get::<_, Option<String>>(&key).await {
+            Ok(Some(serialized)) => {
                 if let Ok(cost) = serialized.parse::<u64>() {
                     debug!("Cost for message_id {} is {}", message_id, cost);
                     return Ok(cost);
@@ -54,6 +54,16 @@ impl CostCacheTrait for CostCache {
                         serialized
                     ));
                 }
+            }
+            Ok(None) => {
+                error!(
+                    "Failed to get cost for message_id {}: Key not found in Redis",
+                    message_id
+                );
+                return Err(anyhow::anyhow!(
+                    "Failed to get cost for message_id {}: Key not found in Redis",
+                    message_id
+                ));
             }
             Err(e) => {
                 error!(
