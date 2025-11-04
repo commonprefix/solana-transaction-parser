@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-axelar-solana-gateway = { git = "https://github.com/axelarnetwork/axelar-amplifier-solana", branch = "v2-anchor-its-execute-wip", package = "axelar-solana-gateway-v2", features = ["no-entrypoint"] }
-axelar-solana-gas-service = { git = "https://github.com/axelarnetwork/axelar-amplifier-solana", branch = "v2-anchor-its-execute-wip", package = "axelar-solana-gas-service-v2", features = ["no-entrypoint"] }
-axelar-solana-its = { git = "https://github.com/axelarnetwork/axelar-amplifier-solana", branch = "v2-anchor-its-execute-wip", package = "axelar-solana-its-v2", features = ["no-entrypoint"] }
+axelar-solana-gateway = { git = "https://github.com/axelarnetwork/axelar-amplifier-solana", branch = "main", package = "solana-axelar-gateway", features = ["no-entrypoint"] }
+axelar-solana-gas-service = { git = "https://github.com/axelarnetwork/axelar-amplifier-solana", branch = "main", package = "solana-axelar-gas-service", features = ["no-entrypoint"] }
+axelar-solana-its = { git = "https://github.com/axelarnetwork/axelar-amplifier-solana", branch = "main", package = "solana-axelar-its", features = ["no-entrypoint"] }
 relayer-core = { git = "https://github.com/commonprefix/axelar-relayer-core", branch = "temp-solana", features = ["mocks"] }
 anchor-lang = "0.31.1"
 hex = "0.4.3"

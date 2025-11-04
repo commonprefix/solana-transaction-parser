@@ -20,10 +20,10 @@ use axelar_solana_gas_service::events::{GasAddedEvent, GasPaidEvent, GasRefunded
 use axelar_solana_gateway::events::{
     CallContractEvent, MessageApprovedEvent, MessageExecutedEvent, VerifierSetRotatedEvent,
 };
-use axelar_solana_its::events::{
-    InterchainTokenDeploymentStarted, InterchainTransferReceived, LinkTokenStarted,
-    TokenMetadataRegistered,
-};
+// use axelar_solana_its::events::{
+//     InterchainTokenDeploymentStarted, InterchainTransferReceived, LinkTokenStarted,
+//     TokenMetadataRegistered,
+// };
 use relayer_core::gmp_api::gmp_types::Event;
 use relayer_core::utils::ThreadSafe;
 use solana_sdk::pubkey::Pubkey;
@@ -326,70 +326,70 @@ impl TransactionParser {
                             parser.parse().await?;
                             parsers.push(Box::new(parser));
                         }
-                        InterchainTransferReceived::DISCRIMINATOR => {
-                            let mut parser = ParserInterchainTransfer::new(
-                                transaction.signature.to_string(),
-                                ci.clone(),
-                                self.its_address,
-                                transaction.account_keys.clone(),
-                                transaction.timestamp.unwrap_or_default().to_rfc3339(),
-                            )
-                            .await?;
-                            info!(
-                                "ParserInterchainTransfer matched, transaction signature={}",
-                                transaction.signature
-                            );
-                            parser.parse().await?;
-                            its_parsers.push(Box::new(parser));
-                        }
-                        InterchainTokenDeploymentStarted::DISCRIMINATOR => {
-                            let mut parser = ParserInterchainTokenDeploymentStarted::new(
-                                transaction.signature.to_string(),
-                                ci.clone(),
-                                self.its_address,
-                                transaction.account_keys.clone(),
-                                transaction.timestamp.unwrap_or_default().to_rfc3339(),
-                            )
-                            .await?;
-                            info!(
-                                    "ParserInterchainTokenDeploymentStarted matched, transaction signature={}",
-                                    transaction.signature
-                                );
-                            parser.parse().await?;
-                            its_parsers.push(Box::new(parser));
-                        }
-                        LinkTokenStarted::DISCRIMINATOR => {
-                            let mut parser = ParserLinkTokenStarted::new(
-                                transaction.signature.to_string(),
-                                ci.clone(),
-                                self.its_address,
-                                transaction.account_keys.clone(),
-                                transaction.timestamp.unwrap_or_default().to_rfc3339(),
-                            )
-                            .await?;
-                            info!(
-                                "ParserLinkTokenStarted matched, transaction signature={}",
-                                transaction.signature
-                            );
-                            parser.parse().await?;
-                            its_parsers.push(Box::new(parser));
-                        }
-                        TokenMetadataRegistered::DISCRIMINATOR => {
-                            let mut parser = ParserTokenMetadataRegistered::new(
-                                transaction.signature.to_string(),
-                                ci.clone(),
-                                self.its_address,
-                                transaction.account_keys.clone(),
-                                transaction.timestamp.unwrap_or_default().to_rfc3339(),
-                            )
-                            .await?;
-                            info!(
-                                "ParserTokenMetadataRegistered matched, transaction signature={}",
-                                transaction.signature
-                            );
-                            parser.parse().await?;
-                            its_parsers.push(Box::new(parser));
-                        }
+                        // InterchainTransferReceived::DISCRIMINATOR => {
+                        //     let mut parser = ParserInterchainTransfer::new(
+                        //         transaction.signature.to_string(),
+                        //         ci.clone(),
+                        //         self.its_address,
+                        //         transaction.account_keys.clone(),
+                        //         transaction.timestamp.unwrap_or_default().to_rfc3339(),
+                        //     )
+                        //     .await?;
+                        //     info!(
+                        //         "ParserInterchainTransfer matched, transaction signature={}",
+                        //         transaction.signature
+                        //     );
+                        //     parser.parse().await?;
+                        //     its_parsers.push(Box::new(parser));
+                        // }
+                        // InterchainTokenDeploymentStarted::DISCRIMINATOR => {
+                        //     let mut parser = ParserInterchainTokenDeploymentStarted::new(
+                        //         transaction.signature.to_string(),
+                        //         ci.clone(),
+                        //         self.its_address,
+                        //         transaction.account_keys.clone(),
+                        //         transaction.timestamp.unwrap_or_default().to_rfc3339(),
+                        //     )
+                        //     .await?;
+                        //     info!(
+                        //             "ParserInterchainTokenDeploymentStarted matched, transaction signature={}",
+                        //             transaction.signature
+                        //         );
+                        //     parser.parse().await?;
+                        //     its_parsers.push(Box::new(parser));
+                        // }
+                        // LinkTokenStarted::DISCRIMINATOR => {
+                        //     let mut parser = ParserLinkTokenStarted::new(
+                        //         transaction.signature.to_string(),
+                        //         ci.clone(),
+                        //         self.its_address,
+                        //         transaction.account_keys.clone(),
+                        //         transaction.timestamp.unwrap_or_default().to_rfc3339(),
+                        //     )
+                        //     .await?;
+                        //     info!(
+                        //         "ParserLinkTokenStarted matched, transaction signature={}",
+                        //         transaction.signature
+                        //     );
+                        //     parser.parse().await?;
+                        //     its_parsers.push(Box::new(parser));
+                        // }
+                        // TokenMetadataRegistered::DISCRIMINATOR => {
+                        //     let mut parser = ParserTokenMetadataRegistered::new(
+                        //         transaction.signature.to_string(),
+                        //         ci.clone(),
+                        //         self.its_address,
+                        //         transaction.account_keys.clone(),
+                        //         transaction.timestamp.unwrap_or_default().to_rfc3339(),
+                        //     )
+                        //     .await?;
+                        //     info!(
+                        //         "ParserTokenMetadataRegistered matched, transaction signature={}",
+                        //         transaction.signature
+                        //     );
+                        //     parser.parse().await?;
+                        //     its_parsers.push(Box::new(parser));
+                        // }
                         _ => {
                             debug!(
                                 "Unknown event type discriminator: {:?}",
