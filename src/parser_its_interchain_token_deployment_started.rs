@@ -4,8 +4,9 @@ use crate::common::check_discriminators_and_address;
 use crate::error::TransactionParsingError;
 use crate::message_matching_key::MessageMatchingKey;
 use crate::parser::Parser;
+use anchor_lang::AnchorDeserialize;
 use async_trait::async_trait;
-use borsh::BorshDeserialize;
+use axelar_solana_its::events::InterchainTokenDeploymentStarted;
 use relayer_core::gmp_api::gmp_types::{
     CommonEventFields, Event, EventMetadata, InterchainTokenDefinition,
 };
@@ -13,16 +14,6 @@ use solana_sdk::pubkey::Pubkey;
 use solana_transaction_status::UiCompiledInstruction;
 use tracing::debug;
 use uuid::Uuid;
-
-#[derive(BorshDeserialize, Clone, Debug)]
-pub struct InterchainTokenDeploymentStarted {
-    pub token_id: [u8; 32],
-    pub token_name: String,
-    pub token_symbol: String,
-    pub token_decimals: u8,
-    pub minter: Vec<u8>,
-    pub destination_chain: String,
-}
 
 pub struct ParserInterchainTokenDeploymentStarted {
     signature: String,
@@ -58,7 +49,7 @@ impl ParserInterchainTokenDeploymentStarted {
     ) -> Result<InterchainTokenDeploymentStarted, TransactionParsingError> {
         let payload =
             check_discriminators_and_address(instruction, expected_contract_address, accounts)?;
-        match InterchainTokenDeploymentStarted::try_from_slice(payload.into_iter().as_slice()) {
+        match InterchainTokenDeploymentStarted::deserialize(&mut payload.as_slice()) {
             Ok(event) => {
                 debug!(
                     "Execute interchain token deployment started event={:?}",

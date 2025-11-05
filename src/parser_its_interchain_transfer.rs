@@ -4,26 +4,16 @@ use crate::common::check_discriminators_and_address;
 use crate::error::TransactionParsingError;
 use crate::message_matching_key::MessageMatchingKey;
 use crate::parser::Parser;
+use anchor_lang::AnchorDeserialize;
 use async_trait::async_trait;
+use axelar_solana_its::events::InterchainTransfer;
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine as _;
-use borsh::BorshDeserialize;
 use relayer_core::gmp_api::gmp_types::{Amount, CommonEventFields, Event, EventMetadata};
 use solana_sdk::pubkey::Pubkey;
 use solana_transaction_status::UiCompiledInstruction;
 use tracing::debug;
 use uuid::Uuid;
-
-#[derive(BorshDeserialize, Clone, Debug)]
-pub struct InterchainTransfer {
-    pub token_id: [u8; 32],
-    pub source_address: Pubkey,
-    pub source_token_account: Pubkey,
-    pub destination_chain: String,
-    pub destination_address: Vec<u8>,
-    pub amount: u64,
-    pub data_hash: [u8; 32],
-}
 
 pub struct ParserInterchainTransfer {
     signature: String,
@@ -59,7 +49,7 @@ impl ParserInterchainTransfer {
     ) -> Result<InterchainTransfer, TransactionParsingError> {
         let payload =
             check_discriminators_and_address(instruction, expected_contract_address, accounts)?;
-        match InterchainTransfer::try_from_slice(payload.into_iter().as_slice()) {
+        match InterchainTransfer::deserialize(&mut payload.as_slice()) {
             Ok(event) => {
                 debug!("Interchain Transfer event={:?}", event);
                 Ok(event)
@@ -144,7 +134,7 @@ mod tests {
         let txs = transaction_fixtures();
 
         let tx = txs[7].clone();
-        let compiled_ix: UiCompiledInstruction = match tx.ixs[1].instructions[0].clone() {
+        let compiled_ix: UiCompiledInstruction = match tx.ixs[0].instructions[0].clone() {
             UiInstruction::Compiled(ix) => ix,
             _ => panic!("expected a compiled instruction"),
         };

@@ -20,15 +20,15 @@ use axelar_solana_gas_service::events::{GasAddedEvent, GasPaidEvent, GasRefunded
 use axelar_solana_gateway::events::{
     CallContractEvent, MessageApprovedEvent, MessageExecutedEvent, VerifierSetRotatedEvent,
 };
-// use axelar_solana_its::events::{
-//     InterchainTokenDeploymentStarted, InterchainTransferReceived, LinkTokenStarted,
-//     TokenMetadataRegistered,
-// };
+use axelar_solana_its::events::{
+    InterchainTokenDeploymentStarted, InterchainTransfer, LinkTokenStarted, TokenMetadataRegistered,
+};
 use relayer_core::gmp_api::gmp_types::Event;
 use relayer_core::utils::ThreadSafe;
 use solana_sdk::pubkey::Pubkey;
 use solana_transaction_status::UiInstruction;
 use std::collections::HashMap;
+use std::sync::Arc;
 use tracing::{debug, info, warn};
 
 pub const CPI_EVENT_DISC: &[u8] = &[228, 69, 165, 46, 81, 203, 154, 29];
@@ -282,7 +282,7 @@ impl TransactionParser {
                                 self.gateway_address,
                                 transaction.account_keys.clone(),
                                 transaction.timestamp.unwrap_or_default().to_rfc3339(),
-                                self.cost_cache.clone(),
+                                Arc::clone(&self.cost_cache),
                             )
                             .await?;
                             info!(
@@ -299,7 +299,7 @@ impl TransactionParser {
                                 self.gateway_address,
                                 transaction.account_keys.clone(),
                                 transaction.timestamp.unwrap_or_default().to_rfc3339(),
-                                self.cost_cache.clone(),
+                                Arc::clone(&self.cost_cache),
                             )
                             .await?;
                             info!(
@@ -326,70 +326,70 @@ impl TransactionParser {
                             parser.parse().await?;
                             parsers.push(Box::new(parser));
                         }
-                        // InterchainTransferReceived::DISCRIMINATOR => {
-                        //     let mut parser = ParserInterchainTransfer::new(
-                        //         transaction.signature.to_string(),
-                        //         ci.clone(),
-                        //         self.its_address,
-                        //         transaction.account_keys.clone(),
-                        //         transaction.timestamp.unwrap_or_default().to_rfc3339(),
-                        //     )
-                        //     .await?;
-                        //     info!(
-                        //         "ParserInterchainTransfer matched, transaction signature={}",
-                        //         transaction.signature
-                        //     );
-                        //     parser.parse().await?;
-                        //     its_parsers.push(Box::new(parser));
-                        // }
-                        // InterchainTokenDeploymentStarted::DISCRIMINATOR => {
-                        //     let mut parser = ParserInterchainTokenDeploymentStarted::new(
-                        //         transaction.signature.to_string(),
-                        //         ci.clone(),
-                        //         self.its_address,
-                        //         transaction.account_keys.clone(),
-                        //         transaction.timestamp.unwrap_or_default().to_rfc3339(),
-                        //     )
-                        //     .await?;
-                        //     info!(
-                        //             "ParserInterchainTokenDeploymentStarted matched, transaction signature={}",
-                        //             transaction.signature
-                        //         );
-                        //     parser.parse().await?;
-                        //     its_parsers.push(Box::new(parser));
-                        // }
-                        // LinkTokenStarted::DISCRIMINATOR => {
-                        //     let mut parser = ParserLinkTokenStarted::new(
-                        //         transaction.signature.to_string(),
-                        //         ci.clone(),
-                        //         self.its_address,
-                        //         transaction.account_keys.clone(),
-                        //         transaction.timestamp.unwrap_or_default().to_rfc3339(),
-                        //     )
-                        //     .await?;
-                        //     info!(
-                        //         "ParserLinkTokenStarted matched, transaction signature={}",
-                        //         transaction.signature
-                        //     );
-                        //     parser.parse().await?;
-                        //     its_parsers.push(Box::new(parser));
-                        // }
-                        // TokenMetadataRegistered::DISCRIMINATOR => {
-                        //     let mut parser = ParserTokenMetadataRegistered::new(
-                        //         transaction.signature.to_string(),
-                        //         ci.clone(),
-                        //         self.its_address,
-                        //         transaction.account_keys.clone(),
-                        //         transaction.timestamp.unwrap_or_default().to_rfc3339(),
-                        //     )
-                        //     .await?;
-                        //     info!(
-                        //         "ParserTokenMetadataRegistered matched, transaction signature={}",
-                        //         transaction.signature
-                        //     );
-                        //     parser.parse().await?;
-                        //     its_parsers.push(Box::new(parser));
-                        // }
+                        InterchainTransfer::DISCRIMINATOR => {
+                            let mut parser = ParserInterchainTransfer::new(
+                                transaction.signature.to_string(),
+                                ci.clone(),
+                                self.its_address,
+                                transaction.account_keys.clone(),
+                                transaction.timestamp.unwrap_or_default().to_rfc3339(),
+                            )
+                            .await?;
+                            info!(
+                                "ParserInterchainTransfer matched, transaction signature={}",
+                                transaction.signature
+                            );
+                            parser.parse().await?;
+                            its_parsers.push(Box::new(parser));
+                        }
+                        InterchainTokenDeploymentStarted::DISCRIMINATOR => {
+                            let mut parser = ParserInterchainTokenDeploymentStarted::new(
+                                transaction.signature.to_string(),
+                                ci.clone(),
+                                self.its_address,
+                                transaction.account_keys.clone(),
+                                transaction.timestamp.unwrap_or_default().to_rfc3339(),
+                            )
+                            .await?;
+                            info!(
+                                    "ParserInterchainTokenDeploymentStarted matched, transaction signature={}",
+                                    transaction.signature
+                                );
+                            parser.parse().await?;
+                            its_parsers.push(Box::new(parser));
+                        }
+                        LinkTokenStarted::DISCRIMINATOR => {
+                            let mut parser = ParserLinkTokenStarted::new(
+                                transaction.signature.to_string(),
+                                ci.clone(),
+                                self.its_address,
+                                transaction.account_keys.clone(),
+                                transaction.timestamp.unwrap_or_default().to_rfc3339(),
+                            )
+                            .await?;
+                            info!(
+                                "ParserLinkTokenStarted matched, transaction signature={}",
+                                transaction.signature
+                            );
+                            parser.parse().await?;
+                            its_parsers.push(Box::new(parser));
+                        }
+                        TokenMetadataRegistered::DISCRIMINATOR => {
+                            let mut parser = ParserTokenMetadataRegistered::new(
+                                transaction.signature.to_string(),
+                                ci.clone(),
+                                self.its_address,
+                                transaction.account_keys.clone(),
+                                transaction.timestamp.unwrap_or_default().to_rfc3339(),
+                            )
+                            .await?;
+                            info!(
+                                "ParserTokenMetadataRegistered matched, transaction signature={}",
+                                transaction.signature
+                            );
+                            parser.parse().await?;
+                            its_parsers.push(Box::new(parser));
+                        }
                         _ => {
                             debug!(
                                 "Unknown event type discriminator: {:?}",
@@ -586,14 +586,14 @@ mod tests {
             .unwrap();
         assert_eq!(events.len(), 2);
 
-        match events[0].clone() {
-            Event::Call { message, .. } => match events[1].clone() {
-                Event::ITSInterchainTransfer { message_id, .. } => {
+        match events[1].clone() {
+            Event::ITSInterchainTransfer { message_id, .. } => match events[0].clone() {
+                Event::Call { message, .. } => {
                     assert_eq!(message_id, message.message_id);
                 }
-                _ => panic!("Expected ITSInterchainTransfer event"),
+                _ => panic!("Expected Call event"),
             },
-            _ => panic!("Expected Call event"),
+            _ => panic!("Expected ITSInterchainTransfer event"),
         }
     }
 

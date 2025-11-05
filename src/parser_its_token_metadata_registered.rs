@@ -2,21 +2,14 @@ use crate::common::check_discriminators_and_address;
 use crate::error::TransactionParsingError;
 use crate::message_matching_key::MessageMatchingKey;
 use crate::parser::Parser;
+use anchor_lang::AnchorDeserialize;
 use async_trait::async_trait;
-use borsh::BorshDeserialize;
+use axelar_solana_its::events::TokenMetadataRegistered;
 use relayer_core::gmp_api::gmp_types::{CommonEventFields, Event, EventMetadata};
 use solana_sdk::pubkey::Pubkey;
 use solana_transaction_status::UiCompiledInstruction;
 use tracing::debug;
 use uuid::Uuid;
-
-// TODO: Import it from the contract once ITSv2 is ready
-
-#[derive(BorshDeserialize, Clone, Debug)]
-pub struct TokenMetadataRegistered {
-    pub token_address: Pubkey,
-    pub decimals: u8,
-}
 
 pub struct ParserTokenMetadataRegistered {
     signature: String,
@@ -52,7 +45,7 @@ impl ParserTokenMetadataRegistered {
     ) -> Result<TokenMetadataRegistered, TransactionParsingError> {
         let payload =
             check_discriminators_and_address(instruction, expected_contract_address, accounts)?;
-        match TokenMetadataRegistered::try_from_slice(payload.into_iter().as_slice()) {
+        match TokenMetadataRegistered::deserialize(&mut payload.as_slice()) {
             Ok(event) => {
                 debug!("Token Metadata Registered event={:?}", event);
                 Ok(event)

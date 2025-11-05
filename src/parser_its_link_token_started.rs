@@ -2,26 +2,16 @@ use crate::common::check_discriminators_and_address;
 use crate::error::TransactionParsingError;
 use crate::message_matching_key::MessageMatchingKey;
 use crate::parser::Parser;
+use anchor_lang::AnchorDeserialize;
 use async_trait::async_trait;
+use axelar_solana_its::events::LinkTokenStarted;
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine as _;
-use borsh::BorshDeserialize;
 use relayer_core::gmp_api::gmp_types::{CommonEventFields, Event, EventMetadata, TokenManagerType};
 use solana_sdk::pubkey::Pubkey;
 use solana_transaction_status::UiCompiledInstruction;
 use tracing::debug;
 use uuid::Uuid;
-
-// TODO: Import it from the contract once ITSv2 is ready
-#[derive(BorshDeserialize, Clone, Debug)]
-pub struct LinkTokenStarted {
-    pub token_id: [u8; 32],
-    pub destination_chain: String,
-    pub source_token_address: Pubkey,
-    pub destination_token_address: Vec<u8>,
-    pub token_manager_type: u8,
-    pub _params: Vec<u8>,
-}
 
 pub struct ParserLinkTokenStarted {
     signature: String,
@@ -57,7 +47,7 @@ impl ParserLinkTokenStarted {
     ) -> Result<LinkTokenStarted, TransactionParsingError> {
         let payload =
             check_discriminators_and_address(instruction, expected_contract_address, accounts)?;
-        match LinkTokenStarted::try_from_slice(payload.into_iter().as_slice()) {
+        match LinkTokenStarted::deserialize(&mut payload.as_slice()) {
             Ok(event) => {
                 debug!("Link Token Started event={:?}", event);
                 Ok(event)

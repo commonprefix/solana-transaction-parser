@@ -136,8 +136,8 @@ impl Parser for ParserSignersRotated {
 mod tests {
     use std::str::FromStr;
 
-    use base64::prelude::BASE64_STANDARD;
-    use base64::Engine as _;
+    // use base64::prelude::BASE64_STANDARD;
+    // use base64::Engine as _;
     use solana_transaction_status::UiInstruction;
 
     use super::*;
