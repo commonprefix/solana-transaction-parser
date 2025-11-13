@@ -53,9 +53,9 @@ pub struct TransactionParser {
     cost_cache: CostCacheRef,
 }
 
-#[cfg_attr(test, mockall::automock)]
+#[cfg_attr(any(test, feature = "mocks"), mockall::automock)]
 #[async_trait]
-pub trait TransactionParserTrait: Send + Sync {
+pub trait TransactionParserTrait: ThreadSafe {
     async fn parse_transaction(
         &self,
         transaction: String,

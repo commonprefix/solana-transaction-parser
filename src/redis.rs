@@ -16,7 +16,7 @@ impl CostCache {
     }
 }
 
-#[cfg_attr(test, mockall::automock)]
+#[cfg_attr(any(test, feature = "mocks"), mockall::automock)]
 #[async_trait::async_trait]
 pub trait CostCacheTrait: ThreadSafe {
     async fn get_cost_by_message_id(

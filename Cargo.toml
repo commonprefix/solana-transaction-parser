@@ -27,12 +27,16 @@ borsh = { version = "1", features = ["derive"] }
 chrono = { version = "0.4.40", features = ["serde"] }
 tokio = { version = "1.41.1", features = ["full", "test-util"] }
 solana-transaction-status-client-types = "~2.3"
+mockall = { version = "0.13.1", optional = true }
 
 [dev-dependencies]
 mockall = "0.13.1"
 testcontainers = "0.24.0"
 testcontainers-modules = { version = "0.12.1", features = ["postgres"] }
 tracing-test = "0.2.5"
+
+[features]
+mocks = ["dep:mockall"]
 
 [lints.clippy]
 uninlined_format_args = "allow"

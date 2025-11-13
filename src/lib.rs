@@ -18,5 +18,8 @@ pub mod redis;
 pub mod types;
 pub use relayer_core::gmp_api::gmp_types;
 
+#[cfg(feature = "mocks")]
+pub use parser::MockTransactionParserTrait;
+
 #[cfg(test)]
 pub mod test_utils;
