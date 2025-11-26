@@ -95,7 +95,11 @@ impl Parser for ParserInterchainTokenDeploymentStarted {
                 event_id: format!("{}-its-interchain-token-deployment-started", Uuid::new_v4()),
                 meta: Some(EventMetadata {
                     tx_id: Some(self.signature.clone()),
-                    from_address: Some(hex::encode(parsed.minter)),
+                    from_address: if parsed.minter.is_empty() {
+                        None
+                    } else {
+                        Some(hex::encode(parsed.minter))
+                    },
                     finalized: None,
                     source_context: Some(HashMap::from([(
                         "token_id".to_owned(),
