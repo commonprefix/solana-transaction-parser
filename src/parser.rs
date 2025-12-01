@@ -97,7 +97,7 @@ impl TransactionParserTrait for TransactionParser {
         );
 
         if (parsers.len() + its_parsers.len() + call_contract.len() + gas_credit_map.len()) == 0 {
-            warn!(
+            debug!(
                 "Transaction did not produce any parsers: transaction signature={}",
                 transaction.signature
             );
