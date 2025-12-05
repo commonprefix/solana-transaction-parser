@@ -54,14 +54,27 @@ impl ParserMessageApproved {
     ) -> Result<MessageApprovedEvent, TransactionParsingError> {
         let payload =
             check_discriminators_and_address(instruction, expected_contract_address, accounts)?;
+        debug!(
+            "MessageApprovedEvent payload length: {}, first 32 bytes: {:?}",
+            payload.len(),
+            payload.get(0..32.min(payload.len()))
+        );
         match MessageApprovedEvent::deserialize(&mut payload.as_slice()) {
             Ok(event) => {
                 debug!("Message Approved event={:?}", event);
                 Ok(event)
             }
-            Err(_) => Err(TransactionParsingError::InvalidInstructionData(
-                "invalid message approved event".to_string(),
-            )),
+            Err(e) => {
+                debug!(
+                    "Failed to deserialize MessageApprovedEvent: {:?}, payload length: {}",
+                    e,
+                    payload.len()
+                );
+                Err(TransactionParsingError::InvalidInstructionData(format!(
+                    "invalid message approved event: {:?}",
+                    e
+                )))
+            }
         }
     }
 }

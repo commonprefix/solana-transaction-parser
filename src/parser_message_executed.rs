@@ -97,7 +97,7 @@ impl Parser for ParserMessageExecuted {
                 meta: Some(MessageExecutedEventMetadata {
                     common_meta: EventMetadata {
                         tx_id: Some(self.signature.clone()),
-                        from_address: None,
+                        from_address: Some(parsed.source_address.clone()),
                         finalized: None,
                         source_context: None,
                         timestamp: self.timestamp.clone(),
@@ -178,7 +178,9 @@ mod tests {
                         meta: Some(MessageExecutedEventMetadata {
                             common_meta: EventMetadata {
                                 tx_id: Some(sig.clone()),
-                                from_address: None,
+                                from_address: Some(
+                                    parser.parsed.as_ref().unwrap().source_address.clone(),
+                                ),
                                 finalized: None,
                                 source_context: None,
                                 timestamp: parser.timestamp.clone(),

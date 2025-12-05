@@ -95,11 +95,7 @@ impl Parser for ParserInterchainTokenDeploymentStarted {
                 event_id: format!("{}-its-interchain-token-deployment-started", Uuid::new_v4()),
                 meta: Some(EventMetadata {
                     tx_id: Some(self.signature.clone()),
-                    from_address: if parsed.minter.is_empty() {
-                        None
-                    } else {
-                        Some(hex::encode(parsed.minter))
-                    },
+                    from_address: parsed.minter.map(|minter| hex::encode(minter.to_bytes())),
                     finalized: None,
                     source_context: Some(HashMap::from([(
                         "token_id".to_owned(),
@@ -114,9 +110,9 @@ impl Parser for ParserInterchainTokenDeploymentStarted {
             })?,
             token: InterchainTokenDefinition {
                 id: hex::encode(parsed.token_id),
-                name: parsed.token_name.clone(),
-                symbol: parsed.token_symbol.clone(),
-                decimals: parsed.token_decimals,
+                name: parsed.name.clone(),
+                symbol: parsed.symbol.clone(),
+                decimals: parsed.decimals,
             },
         })
     }
@@ -166,7 +162,12 @@ mod tests {
                         event_id: common.event_id.clone(),
                         meta: Some(EventMetadata {
                             tx_id: Some(sig.to_string()),
-                            from_address: Some(hex::encode(parser.parsed.clone().unwrap().minter)),
+                            from_address: parser
+                                .parsed
+                                .clone()
+                                .unwrap()
+                                .minter
+                                .map(|minter| minter.to_string()),
                             finalized: None,
                             source_context: Some(HashMap::from([(
                                 "token_id".to_owned(),
@@ -179,9 +180,9 @@ mod tests {
                     destination_chain: parser.parsed.as_ref().unwrap().destination_chain.clone(),
                     token: InterchainTokenDefinition {
                         id: hex::encode(parser.parsed.as_ref().unwrap().token_id),
-                        name: parser.parsed.as_ref().unwrap().token_name.clone(),
-                        symbol: parser.parsed.as_ref().unwrap().token_symbol.clone(),
-                        decimals: parser.parsed.as_ref().unwrap().token_decimals,
+                        name: parser.parsed.as_ref().unwrap().name.clone(),
+                        symbol: parser.parsed.as_ref().unwrap().symbol.clone(),
+                        decimals: parser.parsed.as_ref().unwrap().decimals,
                     },
                 };
                 assert_eq!(event, expected_event);

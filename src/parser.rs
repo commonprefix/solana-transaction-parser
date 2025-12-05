@@ -21,7 +21,8 @@ use axelar_solana_gateway::events::{
     CallContractEvent, MessageApprovedEvent, MessageExecutedEvent, VerifierSetRotatedEvent,
 };
 use axelar_solana_its::events::{
-    InterchainTokenDeploymentStarted, InterchainTransfer, LinkTokenStarted, TokenMetadataRegistered,
+    InterchainTokenDeploymentStarted, InterchainTransferSent, LinkTokenStarted,
+    TokenMetadataRegistered,
 };
 use relayer_core::gmp_api::gmp_types::Event;
 use relayer_core::utils::ThreadSafe;
@@ -326,7 +327,7 @@ impl TransactionParser {
                             parser.parse().await?;
                             parsers.push(Box::new(parser));
                         }
-                        InterchainTransfer::DISCRIMINATOR => {
+                        InterchainTransferSent::DISCRIMINATOR => {
                             let mut parser = ParserInterchainTransfer::new(
                                 transaction.signature.to_string(),
                                 ci.clone(),

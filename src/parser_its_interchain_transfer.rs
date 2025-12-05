@@ -6,7 +6,7 @@ use crate::message_matching_key::MessageMatchingKey;
 use crate::parser::Parser;
 use anchor_lang::AnchorDeserialize;
 use async_trait::async_trait;
-use axelar_solana_its::events::InterchainTransfer;
+use axelar_solana_its::events::InterchainTransferSent;
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine as _;
 use relayer_core::gmp_api::gmp_types::{Amount, CommonEventFields, Event, EventMetadata};
@@ -17,7 +17,7 @@ use uuid::Uuid;
 
 pub struct ParserInterchainTransfer {
     signature: String,
-    parsed: Option<InterchainTransfer>,
+    parsed: Option<InterchainTransferSent>,
     instruction: UiCompiledInstruction,
     expected_contract_address: Pubkey,
     accounts: Vec<String>,
@@ -46,10 +46,10 @@ impl ParserInterchainTransfer {
         instruction: &UiCompiledInstruction,
         expected_contract_address: Pubkey,
         accounts: &[String],
-    ) -> Result<InterchainTransfer, TransactionParsingError> {
+    ) -> Result<InterchainTransferSent, TransactionParsingError> {
         let payload =
             check_discriminators_and_address(instruction, expected_contract_address, accounts)?;
-        match InterchainTransfer::deserialize(&mut payload.as_slice()) {
+        match InterchainTransferSent::deserialize(&mut payload.as_slice()) {
             Ok(event) => {
                 debug!("Interchain Transfer event={:?}", event);
                 Ok(event)
@@ -104,7 +104,10 @@ impl Parser for ParserInterchainTransfer {
             source_address: parsed.source_address.to_string(),
             destination_chain: parsed.destination_chain.clone(),
             destination_address: BASE64_STANDARD.encode(parsed.destination_address),
-            data_hash: BASE64_STANDARD.encode(parsed.data_hash),
+            data_hash: match parsed.data_hash {
+                Some(data_hash) => BASE64_STANDARD.encode(data_hash),
+                None => "".to_string(),
+            },
             message_id: message_id.ok_or_else(|| {
                 TransactionParsingError::Message("Missing message_id".to_string())
             })?,
@@ -178,7 +181,10 @@ mod tests {
                     destination_chain: parser.parsed.as_ref().unwrap().destination_chain.clone(),
                     destination_address: BASE64_STANDARD
                         .encode(parser.parsed.as_ref().unwrap().destination_address.clone()),
-                    data_hash: BASE64_STANDARD.encode(parser.parsed.as_ref().unwrap().data_hash),
+                    data_hash: match parser.parsed.as_ref().unwrap().data_hash {
+                        Some(data_hash) => BASE64_STANDARD.encode(data_hash),
+                        None => "".to_string(),
+                    },
                     message_id: format!("{}-1", sig),
                     token_spent: Amount {
                         token_id: Some(hex::encode(parser.parsed.as_ref().unwrap().token_id)),
