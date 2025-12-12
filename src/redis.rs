@@ -3,7 +3,9 @@ use relayer_core::utils::ThreadSafe;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
-use tracing::{debug, error};
+use std::time::Duration;
+use tokio::time::sleep;
+use tracing::{debug, error, warn};
 
 #[derive(Clone)]
 pub struct CostCache {
@@ -38,32 +40,79 @@ impl CostCacheTrait for CostCache {
     ) -> Result<u64, anyhow::Error> {
         let key = format!("cost:{}:{}", transaction_type, message_id);
         let mut conn = self.conn.clone();
-        match conn.get::<_, Option<String>>(&key).await {
-            Ok(Some(serialized)) => {
-                if let Ok(cost) = serialized.parse::<u64>() {
-                    debug!("Cost for key {} is {}", key, cost);
-                    return Ok(cost);
-                } else {
-                    error!("Failed to parse cost for key {}: {}", key, serialized);
-                    return Err(anyhow::anyhow!(
-                        "Failed to parse cost for key {}: {}",
-                        key,
-                        serialized
-                    ));
+        let max_retries = 5;
+        let mut backoff_duration = Duration::from_secs(1);
+
+        for attempt in 0..max_retries {
+            match conn.get::<_, Option<String>>(&key).await {
+                Ok(Some(serialized)) => {
+                    if let Ok(cost) = serialized.parse::<u64>() {
+                        debug!("Cost for key {} is {}", key, cost);
+                        return Ok(cost);
+                    } else {
+                        error!("Failed to parse cost for key {}: {}", key, serialized);
+                        return Err(anyhow::anyhow!(
+                            "Failed to parse cost for key {}: {}",
+                            key,
+                            serialized
+                        ));
+                    }
+                }
+                Ok(None) => {
+                    if attempt < max_retries - 1 {
+                        debug!(
+                            "Failed to get cost from Redis for key {} (attempt {}/{}): Key not found. Retrying in {:?}...",
+                            key,
+                            attempt + 1,
+                            max_retries,
+                            backoff_duration
+                        );
+                        sleep(backoff_duration).await;
+                        backoff_duration *= 2;
+                    } else {
+                        error!(
+                            "Failed to get cost from Redis for key {} after {} attempts: Key not found in Redis",
+                            key, max_retries
+                        );
+                        return Err(anyhow::anyhow!(
+                            "Failed to get cost for key {} after {} attempts: Key not found in Redis",
+                            key,
+                            max_retries
+                        ));
+                    }
+                }
+                Err(e) => {
+                    if attempt < max_retries - 1 {
+                        debug!(
+                            "Failed to get cost from Redis for key {} (attempt {}/{}): {}. Retrying in {:?}...",
+                            key,
+                            attempt + 1,
+                            max_retries,
+                            e,
+                            backoff_duration
+                        );
+                        sleep(backoff_duration).await;
+                        backoff_duration *= 2;
+                    } else {
+                        error!(
+                            "Failed to get cost from Redis for key {} after {} attempts: {}",
+                            key, max_retries, e
+                        );
+                        return Err(anyhow::anyhow!(
+                            "Failed to get cost for key {} after {} attempts: {}",
+                            key,
+                            max_retries,
+                            e
+                        ));
+                    }
                 }
             }
-            Ok(None) => {
-                error!("Failed to get cost for key {}: Key not found in Redis", key);
-                return Err(anyhow::anyhow!(
-                    "Failed to get cost for key {}: Key not found in Redis",
-                    key
-                ));
-            }
-            Err(e) => {
-                error!("Failed to get context from Redis for key {}: {}", key, e);
-                return Err(anyhow::anyhow!("Failed to get cost for key {}: {}", key, e));
-            }
         }
+
+        Err(anyhow::anyhow!(
+            "Failed to get cost for key {}: Max retries exceeded",
+            key
+        ))
     }
 }
 
