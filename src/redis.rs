@@ -41,7 +41,7 @@ impl CostCacheTrait for CostCache {
         let key = format!("cost:{}:{}", transaction_type, message_id);
         let mut conn = self.conn.clone();
         let max_retries = 5;
-        let mut backoff_duration = Duration::from_secs(1);
+        let mut backoff_duration = Duration::from_millis(500);
 
         for attempt in 0..max_retries {
             match conn.get::<_, Option<String>>(&key).await {
@@ -58,7 +58,7 @@ impl CostCacheTrait for CostCache {
                         ));
                     }
                 }
-                Ok(None) => {
+                _ => {
                     if attempt < max_retries - 1 {
                         debug!(
                             "Failed to get cost from Redis for key {} (attempt {}/{}): Key not found. Retrying in {:?}...",
@@ -78,31 +78,6 @@ impl CostCacheTrait for CostCache {
                             "Failed to get cost for key {} after {} attempts: Key not found in Redis",
                             key,
                             max_retries
-                        ));
-                    }
-                }
-                Err(e) => {
-                    if attempt < max_retries - 1 {
-                        debug!(
-                            "Failed to get cost from Redis for key {} (attempt {}/{}): {}. Retrying in {:?}...",
-                            key,
-                            attempt + 1,
-                            max_retries,
-                            e,
-                            backoff_duration
-                        );
-                        sleep(backoff_duration).await;
-                        backoff_duration *= 2;
-                    } else {
-                        error!(
-                            "Failed to get cost from Redis for key {} after {} attempts: {}",
-                            key, max_retries, e
-                        );
-                        return Err(anyhow::anyhow!(
-                            "Failed to get cost for key {} after {} attempts: {}",
-                            key,
-                            max_retries,
-                            e
                         ));
                     }
                 }
