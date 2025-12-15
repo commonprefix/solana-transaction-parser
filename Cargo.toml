@@ -34,7 +34,7 @@ solana-transaction-status = "~2.3"
 borsh = { version = "1", features = ["derive"] }
 chrono = { version = "0.4.40", features = ["serde"] }
 tokio = { version = "1.41.1", features = ["full", "test-util"] }
-solana-transaction-status-client-types = "~2.3"
+solana-transaction-status-client-types = { git = "https://github.com/Deiadara/agave", branch = "chore/add-clone-to-encoded-confirmed-tx-with-meta" }
 mockall = { version = "0.13.1", optional = true }
 
 [dev-dependencies]
