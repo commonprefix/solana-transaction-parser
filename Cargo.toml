@@ -30,11 +30,11 @@ async-trait = "0.1.88"
 base64 = "0.22.1"
 solana-sdk = "~2.3"
 redis = { version = "0.32.4", features = ["tokio-rustls-comp"] }
-solana-transaction-status = "~2.3"
+solana-transaction-status = { git = "https://github.com/Deiadara/agave", rev = "57036b8d647ac4cb366b74f47e77976e3b3592e0" }
 borsh = { version = "1", features = ["derive"] }
 chrono = { version = "0.4.40", features = ["serde"] }
 tokio = { version = "1.41.1", features = ["full", "test-util"] }
-solana-transaction-status-client-types = { git = "https://github.com/Deiadara/agave", branch = "chore/add-clone-to-encoded-confirmed-tx-with-meta" }
+solana-transaction-status-client-types = { git = "https://github.com/Deiadara/agave", rev = "57036b8d647ac4cb366b74f47e77976e3b3592e0" }
 mockall = { version = "0.13.1", optional = true }
 
 [dev-dependencies]
