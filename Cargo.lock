@@ -1534,7 +1534,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "115e54d64eb62cdebad391c19efc9dce4981c690c85a33a12199d99bb9546fee"
 dependencies = [
  "borsh-derive 0.10.4",
- "hashbrown 0.13.2",
+ "hashbrown 0.12.3",
 ]
 
 [[package]]
@@ -2695,7 +2695,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.1",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -3842,16 +3842,6 @@ dependencies = [
  "schemars 0.8.22",
  "strum",
  "thiserror 1.0.69",
-]
-
-[[package]]
-name = "interchain-token-transfer-gmp"
-version = "0.1.1"
-source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=main#b2900004c829118344156441d4f13322bb8d6d50"
-dependencies = [
- "alloy-primitives",
- "alloy-sol-types",
- "hex",
 ]
 
 [[package]]
@@ -5253,8 +5243,8 @@ dependencies = [
 
 [[package]]
 name = "program-utils"
-version = "0.1.2"
-source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=main#b2900004c829118344156441d4f13322bb8d6d50"
+version = "0.1.4"
+source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=main#3fe15500d7f890259015880ee32d1eeb1461866e"
 dependencies = [
  "mpl-token-metadata",
  "solana-program",
@@ -6091,7 +6081,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.11.0",
- "windows-sys 0.61.1",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -6949,8 +6939,8 @@ dependencies = [
 
 [[package]]
 name = "solana-axelar-gas-service"
-version = "0.1.4"
-source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=main#b2900004c829118344156441d4f13322bb8d6d50"
+version = "0.1.6"
+source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=main#3fe15500d7f890259015880ee32d1eeb1461866e"
 dependencies = [
  "anchor-lang",
  "bytemuck",
@@ -6960,8 +6950,8 @@ dependencies = [
 
 [[package]]
 name = "solana-axelar-gateway"
-version = "0.1.4"
-source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=main#b2900004c829118344156441d4f13322bb8d6d50"
+version = "0.1.6"
+source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=main#3fe15500d7f890259015880ee32d1eeb1461866e"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
@@ -6977,15 +6967,13 @@ dependencies = [
 
 [[package]]
 name = "solana-axelar-its"
-version = "0.1.4"
-source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=main#b2900004c829118344156441d4f13322bb8d6d50"
+version = "0.1.6"
+source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=main#3fe15500d7f890259015880ee32d1eeb1461866e"
 dependencies = [
- "alloy-primitives",
  "anchor-lang",
  "anchor-spl",
  "bitflags 2.9.4",
  "bytemuck",
- "interchain-token-transfer-gmp",
  "mpl-token-metadata",
  "program-utils",
  "solana-axelar-gas-service",
@@ -6996,8 +6984,8 @@ dependencies = [
 
 [[package]]
 name = "solana-axelar-operators"
-version = "0.1.4"
-source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=main#b2900004c829118344156441d4f13322bb8d6d50"
+version = "0.1.6"
+source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=main#3fe15500d7f890259015880ee32d1eeb1461866e"
 dependencies = [
  "anchor-lang",
  "program-utils",
@@ -7005,8 +6993,8 @@ dependencies = [
 
 [[package]]
 name = "solana-axelar-std"
-version = "0.1.2"
-source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=main#b2900004c829118344156441d4f13322bb8d6d50"
+version = "0.1.4"
+source = "git+https://github.com/axelarnetwork/axelar-amplifier-solana?branch=main#3fe15500d7f890259015880ee32d1eeb1461866e"
 dependencies = [
  "alloy-primitives",
  "anchor-lang",
@@ -9679,7 +9667,7 @@ dependencies = [
  "getrandom 0.3.3",
  "once_cell",
  "rustix 1.1.2",
- "windows-sys 0.61.1",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -10675,7 +10663,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.1",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
