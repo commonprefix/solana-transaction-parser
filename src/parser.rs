@@ -16,16 +16,16 @@ use crate::types::SolanaTransaction;
 use crate::{error::TransactionParsingError, redis::CostCacheRef};
 use anchor_lang::Discriminator;
 use async_trait::async_trait;
-use axelar_solana_gas_service::events::{GasAddedEvent, GasPaidEvent, GasRefundedEvent};
-use axelar_solana_gateway::events::{
+use relayer_core::gmp_api::gmp_types::Event;
+use relayer_core::utils::ThreadSafe;
+use solana_axelar_gas_service::events::{GasAddedEvent, GasPaidEvent, GasRefundedEvent};
+use solana_axelar_gateway::events::{
     CallContractEvent, MessageApprovedEvent, MessageExecutedEvent, VerifierSetRotatedEvent,
 };
-use axelar_solana_its::events::{
+use solana_axelar_its::events::{
     InterchainTokenDeploymentStarted, InterchainTransferSent, LinkTokenStarted,
     TokenMetadataRegistered,
 };
-use relayer_core::gmp_api::gmp_types::Event;
-use relayer_core::utils::ThreadSafe;
 use solana_sdk::pubkey::Pubkey;
 use solana_transaction_status::UiInstruction;
 use std::collections::HashMap;
