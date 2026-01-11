@@ -5,12 +5,12 @@ use crate::parser::Parser;
 use crate::redis::{CostCacheRef, TransactionType};
 use anchor_lang::AnchorDeserialize;
 use async_trait::async_trait;
-use axelar_solana_gateway::events::MessageExecutedEvent;
 use bs58::encode;
 use relayer_core::gmp_api::gmp_types::{
     Amount, CommonEventFields, Event, EventMetadata, MessageExecutedEventMetadata,
     MessageExecutionStatus,
 };
+use solana_axelar_gateway::events::MessageExecutedEvent;
 use solana_sdk::pubkey::Pubkey;
 use solana_transaction_status::UiCompiledInstruction;
 use tracing::debug;

@@ -6,10 +6,10 @@ use crate::message_matching_key::MessageMatchingKey;
 use crate::parser::Parser;
 use anchor_lang::AnchorDeserialize;
 use async_trait::async_trait;
-use axelar_solana_its::events::InterchainTokenDeploymentStarted;
 use relayer_core::gmp_api::gmp_types::{
     CommonEventFields, Event, EventMetadata, InterchainTokenDefinition,
 };
+use solana_axelar_its::events::InterchainTokenDeploymentStarted;
 use solana_sdk::pubkey::Pubkey;
 use solana_transaction_status::UiCompiledInstruction;
 use tracing::debug;
